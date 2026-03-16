@@ -1,5 +1,154 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">TeleMed Demo</string>
-</resources>
 
+    <!-- Role Selection -->
+    <string name="select_role">Select Your Role</string>
+    <string name="role_health_worker">Health Worker</string>
+    <string name="role_pharmacist">Pharmacist</string>
+    <string name="role_doctor">Doctor</string>
+    <string name="role_hw_desc">Register patients and collect vitals</string>
+    <string name="role_pharmacist_desc">Manage consent and dispense medicines</string>
+    <string name="role_doctor_desc">Consult patients and prescribe treatment</string>
+    <string name="app_tagline">Telemedicine for Rural Healthcare</string>
+
+    <!-- Common -->
+    <string name="login">Login</string>
+    <string name="logout">Logout</string>
+    <string name="email">Email</string>
+    <string name="password">Password</string>
+    <string name="submit">Submit</string>
+    <string name="cancel">Cancel</string>
+    <string name="save">Save</string>
+    <string name="next">Next</string>
+    <string name="back">Back</string>
+    <string name="done">Done</string>
+    <string name="yes">Yes</string>
+    <string name="no">No</string>
+    <string name="loading">Loading…</string>
+    <string name="error">Error</string>
+    <string name="success">Success</string>
+    <string name="retry">Retry</string>
+    <string name="search">Search</string>
+    <string name="share">Share</string>
+    <string name="copy">Copy</string>
+    <string name="download">Download</string>
+    <string name="sync_status">Sync Status</string>
+    <string name="synced">Synced</string>
+    <string name="offline">Offline</string>
+
+    <!-- Health Worker -->
+    <string name="session_setup">Session Setup</string>
+    <string name="spoke_name">Spoke Name</string>
+    <string name="district">District</string>
+    <string name="village">Village</string>
+    <string name="state">State</string>
+    <string name="date_time">Date &amp; Time</string>
+    <string name="start_session">Start Session</string>
+    <string name="dashboard">Dashboard</string>
+    <string name="new_patient">New Patient Registration</string>
+    <string name="recent_patients">Recent Patients</string>
+    <string name="total_today">Total Registered Today</string>
+
+    <!-- Patient Registration Steps -->
+    <string name="step_personal_info">Personal Info</string>
+    <string name="step_address">Address</string>
+    <string name="step_vitals">Vitals</string>
+    <string name="step_medical_history">Medical History</string>
+    <string name="step_documents">Documents</string>
+    <string name="step_review">Review &amp; Submit</string>
+
+    <!-- Personal Info -->
+    <string name="full_name">Full Name</string>
+    <string name="guardian_name">Spouse/Father\'s Name</string>
+    <string name="gender">Gender</string>
+    <string name="male">Male</string>
+    <string name="female">Female</string>
+    <string name="other">Other</string>
+    <string name="age">Age</string>
+    <string name="date_of_birth">Date of Birth</string>
+    <string name="mobile_number">Mobile Number</string>
+    <string name="aadhaar_number">Aadhaar Number</string>
+
+    <!-- Vitals -->
+    <string name="weight_kg">Weight (kg)</string>
+    <string name="temperature">Temperature</string>
+    <string name="blood_pressure">Blood Pressure</string>
+    <string name="systolic">Systolic</string>
+    <string name="diastolic">Diastolic</string>
+    <string name="blood_sugar">Blood Sugar (mg/dL)</string>
+    <string name="hemoglobin">Hemoglobin (g/dL)</string>
+    <string name="spo2">SpO2 (%)</string>
+    <string name="pulse_rate">Pulse Rate (bpm)</string>
+
+    <!-- Medical History -->
+    <string name="primary_complaint">Primary Complaint</string>
+    <string name="symptoms">Symptoms</string>
+    <string name="known_conditions">Known Medical History</string>
+    <string name="lifestyle_history">Lifestyle History</string>
+    <string name="alcohol">Alcohol</string>
+    <string name="tobacco">Tobacco</string>
+    <string name="drugs">Drugs</string>
+
+    <!-- Documents -->
+    <string name="upload_reports">Upload Reports</string>
+    <string name="upload_diagnostics">Upload Diagnostic Images</string>
+    <string name="choose_file">Choose File</string>
+    <string name="take_photo">Take Photo</string>
+
+    <!-- Review -->
+    <string name="review_summary">Review Summary</string>
+    <string name="patient_id">Patient ID</string>
+    <string name="registration_success">Patient Registered Successfully!</string>
+    <string name="share_id">Share Patient ID</string>
+    <string name="copy_id">Copy ID</string>
+
+    <!-- Pharmacist -->
+    <string name="patient_queue">Patient Queue</string>
+    <string name="patient_consent">Patient Consent</string>
+    <string name="consent_question">Does the patient consent to video consultation with the doctor?</string>
+    <string name="connecting_doctor">Connecting to Doctor…</string>
+    <string name="call_connected">Call Connected</string>
+    <string name="end_call">End Call</string>
+    <string name="mute">Mute</string>
+    <string name="prescribed_medicines">Prescribed Medicines</string>
+    <string name="mark_dispensed">Mark as Dispensed</string>
+    <string name="submit_dispensation">Submit Dispensation</string>
+
+    <!-- Doctor -->
+    <string name="incoming_call">Incoming Call</string>
+    <string name="accept_call">Accept</string>
+    <string name="decline_call">Decline</string>
+    <string name="consultation">Consultation</string>
+    <string name="chief_complaints">Chief Complaints</string>
+    <string name="diagnosis">Diagnosis</string>
+    <string name="treatment_plan">Treatment Plan</string>
+    <string name="add_medicine">Add Medicine</string>
+    <string name="medicine_name">Medicine Name</string>
+    <string name="dosage">Dosage</string>
+    <string name="frequency">Frequency</string>
+    <string name="morning">Morning</string>
+    <string name="afternoon">Afternoon</string>
+    <string name="night">Night</string>
+    <string name="duration_days">Duration (days)</string>
+    <string name="special_instructions">Special Instructions</string>
+    <string name="lab_tests">Lab Tests</string>
+    <string name="imaging_notes">Diagnostic Imaging Notes</string>
+    <string name="procedures">Procedures</string>
+    <string name="allergies">Allergies</string>
+    <string name="recommendations">Recommendations</string>
+    <string name="referral">Referral</string>
+    <string name="referral_needed">Referral Needed?</string>
+    <string name="specialty">Specialty</string>
+    <string name="referral_reason">Reason for Referral</string>
+    <string name="preview_prescription">Preview Prescription</string>
+    <string name="generate_pdf">Generate PDF Prescription</string>
+    <string name="share_prescription">Share Prescription</string>
+    <string name="digital_signature">Digital Signature Placeholder</string>
+    <string name="patient_details">Patient Details</string>
+    <string name="vitals_summary">Vitals Summary</string>
+    <string name="answer">Answer</string>
+    <string name="decline">Decline</string>
+    <string name="remove">Remove</string>
+    <string name="icd_code">ICD-10 Code</string>
+</resources>

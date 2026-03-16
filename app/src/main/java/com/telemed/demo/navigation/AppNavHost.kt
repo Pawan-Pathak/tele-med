@@ -1,32 +1,20 @@
 package com.telemed.demo.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.telemed.demo.di.AppViewModelFactory
-import com.telemed.demo.feature.dashboard.DashboardScreen
-import com.telemed.demo.feature.dashboard.DashboardViewModel
-import com.telemed.demo.feature.doctor.DoctorModuleScreen
-import com.telemed.demo.feature.doctor.DoctorModuleViewModel
-import com.telemed.demo.feature.doctorpool.DoctorPoolScreen
-import com.telemed.demo.feature.doctorpool.DoctorPoolViewModel
-import com.telemed.demo.feature.healthworker.HealthWorkerModuleScreen
-import com.telemed.demo.feature.healthworker.HealthWorkerModuleViewModel
-import com.telemed.demo.feature.login.LoginScreen
-import com.telemed.demo.feature.login.LoginViewModel
-import com.telemed.demo.feature.pharmacist.PharmacistModuleScreen
-import com.telemed.demo.feature.pharmacist.PharmacistModuleViewModel
-import com.telemed.demo.feature.prescription.PrescriptionSummaryScreen
-import com.telemed.demo.feature.prescription.PrescriptionSummaryViewModel
-import com.telemed.demo.feature.registration.RegistrationScreen
-import com.telemed.demo.feature.registration.RegistrationViewModel
-import com.telemed.demo.feature.videocall.VideoCallScreen
-import com.telemed.demo.feature.videocall.VideoCallViewModel
-import com.telemed.demo.feature.vitals.VitalsCollectionScreen
-import com.telemed.demo.feature.vitals.VitalsViewModel
+import com.telemed.demo.domain.model.UserRole
+import com.telemed.demo.feature.doctor.*
+import com.telemed.demo.feature.healthworker.*
+import com.telemed.demo.feature.pharmacist.*
+import com.telemed.demo.feature.roleselection.RoleSelectionScreen
 
 @Composable
 fun AppNavHost(
@@ -35,66 +23,339 @@ fun AppNavHost(
 ) {
     NavHost(
         navController = navController,
-        startDestination = AppDestination.Login.route
+        startDestination = AppDestination.RoleSelection.route
     ) {
-        composable(AppDestination.Login.route) {
-            val vm: LoginViewModel = viewModel(factory = factory)
-            LoginScreen(
-                viewModel = vm,
-                onLoginSuccess = { _ ->
-                    navController.navigate(AppDestination.Dashboard.route) {
-                        popUpTo(AppDestination.Login.route) { inclusive = true }
+        // ==================== Entry Point ====================
+        composable(AppDestination.RoleSelection.route) {
+            RoleSelectionScreen(
+                onRoleSelected = { role ->
+                    when (role) {
+                        UserRole.HEALTH_WORKER -> navController.navigate(AppDestination.HWSessionSetup.route)
+                        UserRole.PHARMACIST -> navController.navigate(AppDestination.PharmacistLogin.route)
+                        UserRole.DOCTOR -> navController.navigate(AppDestination.DoctorLogin.route)
                     }
                 }
             )
         }
 
-        composable(AppDestination.Dashboard.route) {
-            val vm: DashboardViewModel = viewModel(factory = factory)
-            DashboardScreen(
+        // ==================== Health Worker Flow ====================
+        composable(AppDestination.HWSessionSetup.route) {
+            val vm: HealthWorkerModuleViewModel = viewModel(
+                viewModelStoreOwner = remember(navController) {
+                    navController.getBackStackEntry(AppDestination.HWSessionSetup.route)
+                },
+                factory = factory
+            )
+            HWSessionSetupScreen(
                 viewModel = vm,
-                onNavigate = { destination -> navController.navigate(destination.route) }
+                onSessionStarted = {
+                    navController.navigate(AppDestination.HWDashboard.route)
+                },
+                onBack = { navController.popBackStack() }
             )
         }
 
-        composable(AppDestination.Registration.route) {
-            val vm: RegistrationViewModel = viewModel(factory = factory)
-            RegistrationScreen(viewModel = vm, onBack = { navController.popBackStack() })
+        composable(AppDestination.HWDashboard.route) {
+            // Share the ViewModel across the HW flow using the session setup entry
+            val vm: HealthWorkerModuleViewModel = viewModel(
+                viewModelStoreOwner = remember(navController) {
+                    navController.getBackStackEntry(AppDestination.HWSessionSetup.route)
+                },
+                factory = factory
+            )
+            HWDashboardScreen(
+                viewModel = vm,
+                onNewPatient = {
+                    navController.navigate(AppDestination.HWRegistrationStep1.route)
+                },
+                onPatientClick = { patientId ->
+                    navController.navigate(AppDestination.HWPatientDetail.createRoute(patientId))
+                },
+                onBack = { navController.popBackStack() }
+            )
         }
 
-        composable(AppDestination.Vitals.route) {
-            val vm: VitalsViewModel = viewModel(factory = factory)
-            VitalsCollectionScreen(viewModel = vm, onBack = { navController.popBackStack() })
+        composable(AppDestination.HWRegistrationStep1.route) {
+            val vm: HealthWorkerModuleViewModel = viewModel(
+                viewModelStoreOwner = remember(navController) {
+                    navController.getBackStackEntry(AppDestination.HWSessionSetup.route)
+                },
+                factory = factory
+            )
+            HWRegStep1Screen(
+                viewModel = vm,
+                onNext = { navController.navigate(AppDestination.HWRegistrationStep2.route) },
+                onBack = { navController.popBackStack() }
+            )
         }
 
-        composable(AppDestination.DoctorPool.route) {
-            val vm: DoctorPoolViewModel = viewModel(factory = factory)
-            DoctorPoolScreen(viewModel = vm, onBack = { navController.popBackStack() })
+        composable(AppDestination.HWRegistrationStep2.route) {
+            val vm: HealthWorkerModuleViewModel = viewModel(
+                viewModelStoreOwner = remember(navController) {
+                    navController.getBackStackEntry(AppDestination.HWSessionSetup.route)
+                },
+                factory = factory
+            )
+            HWRegStep2Screen(
+                viewModel = vm,
+                onNext = { navController.navigate(AppDestination.HWRegistrationStep3.route) },
+                onBack = { navController.popBackStack() }
+            )
         }
 
-        composable(AppDestination.VideoCall.route) {
-            val vm: VideoCallViewModel = viewModel(factory = factory)
-            VideoCallScreen(viewModel = vm, onBack = { navController.popBackStack() })
+        composable(AppDestination.HWRegistrationStep3.route) {
+            val vm: HealthWorkerModuleViewModel = viewModel(
+                viewModelStoreOwner = remember(navController) {
+                    navController.getBackStackEntry(AppDestination.HWSessionSetup.route)
+                },
+                factory = factory
+            )
+            HWRegStep3Screen(
+                viewModel = vm,
+                onNext = { navController.navigate(AppDestination.HWRegistrationStep4.route) },
+                onBack = { navController.popBackStack() }
+            )
         }
 
-        composable(AppDestination.Prescription.route) {
-            val vm: PrescriptionSummaryViewModel = viewModel(factory = factory)
-            PrescriptionSummaryScreen(viewModel = vm, onBack = { navController.popBackStack() })
+        composable(AppDestination.HWRegistrationStep4.route) {
+            val vm: HealthWorkerModuleViewModel = viewModel(
+                viewModelStoreOwner = remember(navController) {
+                    navController.getBackStackEntry(AppDestination.HWSessionSetup.route)
+                },
+                factory = factory
+            )
+            HWRegStep4Screen(
+                viewModel = vm,
+                onNext = { navController.navigate(AppDestination.HWRegistrationStep5.route) },
+                onBack = { navController.popBackStack() }
+            )
         }
 
-        composable(AppDestination.HealthWorkerModule.route) {
-            val vm: HealthWorkerModuleViewModel = viewModel(factory = factory)
-            HealthWorkerModuleScreen(viewModel = vm, onBack = { navController.popBackStack() })
+        composable(AppDestination.HWRegistrationStep5.route) {
+            val vm: HealthWorkerModuleViewModel = viewModel(
+                viewModelStoreOwner = remember(navController) {
+                    navController.getBackStackEntry(AppDestination.HWSessionSetup.route)
+                },
+                factory = factory
+            )
+            HWRegStep5Screen(
+                viewModel = vm,
+                onNext = { navController.navigate(AppDestination.HWRegistrationStep6.route) },
+                onBack = { navController.popBackStack() }
+            )
         }
 
-        composable(AppDestination.PharmacistModule.route) {
-            val vm: PharmacistModuleViewModel = viewModel(factory = factory)
-            PharmacistModuleScreen(viewModel = vm, onBack = { navController.popBackStack() })
+        composable(AppDestination.HWRegistrationStep6.route) {
+            val vm: HealthWorkerModuleViewModel = viewModel(
+                viewModelStoreOwner = remember(navController) {
+                    navController.getBackStackEntry(AppDestination.HWSessionSetup.route)
+                },
+                factory = factory
+            )
+            HWRegStep6Screen(
+                viewModel = vm,
+                onSubmitSuccess = {
+                    // Pop all registration steps back to dashboard
+                    navController.popBackStack(AppDestination.HWDashboard.route, inclusive = false)
+                },
+                onBack = { navController.popBackStack() }
+            )
         }
 
-        composable(AppDestination.DoctorModule.route) {
-            val vm: DoctorModuleViewModel = viewModel(factory = factory)
-            DoctorModuleScreen(viewModel = vm, onBack = { navController.popBackStack() })
+        composable(
+            route = AppDestination.HWPatientDetail.route,
+            arguments = listOf(navArgument("patientId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val patientId = backStackEntry.arguments?.getString("patientId") ?: ""
+            val vm: HealthWorkerModuleViewModel = viewModel(
+                viewModelStoreOwner = remember(navController) {
+                    navController.getBackStackEntry(AppDestination.HWSessionSetup.route)
+                },
+                factory = factory
+            )
+            HWPatientDetailScreen(
+                viewModel = vm,
+                patientId = patientId,
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        // ==================== Pharmacist Flow ====================
+        composable(AppDestination.PharmacistLogin.route) {
+            PharmacistLoginScreen(
+                onLoginSuccess = {
+                    navController.navigate(AppDestination.PharmacistQueue.route) {
+                        popUpTo(AppDestination.PharmacistLogin.route) { inclusive = true }
+                    }
+                },
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(AppDestination.PharmacistQueue.route) {
+            val vm: PharmacistModuleViewModel = viewModel(
+                viewModelStoreOwner = remember(navController) {
+                    navController.getBackStackEntry(AppDestination.PharmacistQueue.route)
+                },
+                factory = factory
+            )
+            PharmacistQueueScreen(
+                viewModel = vm,
+                onPatientSelect = { patientId ->
+                    navController.navigate(AppDestination.PharmacistConsent.createRoute(patientId))
+                },
+                onBack = {
+                    navController.popBackStack(AppDestination.RoleSelection.route, inclusive = false)
+                }
+            )
+        }
+
+        composable(
+            route = AppDestination.PharmacistConsent.route,
+            arguments = listOf(navArgument("patientId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val patientId = backStackEntry.arguments?.getString("patientId") ?: ""
+            val vm: PharmacistModuleViewModel = viewModel(
+                viewModelStoreOwner = remember(navController) {
+                    navController.getBackStackEntry(AppDestination.PharmacistQueue.route)
+                },
+                factory = factory
+            )
+            PharmacistConsentScreen(
+                viewModel = vm,
+                patientId = patientId,
+                onConsentYes = {
+                    navController.navigate(AppDestination.PharmacistVideoCall.route)
+                },
+                onConsentNo = {
+                    navController.popBackStack()
+                },
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(AppDestination.PharmacistVideoCall.route) {
+            val vm: PharmacistModuleViewModel = viewModel(
+                viewModelStoreOwner = remember(navController) {
+                    navController.getBackStackEntry(AppDestination.PharmacistQueue.route)
+                },
+                factory = factory
+            )
+            PharmacistVideoCallScreen(
+                viewModel = vm,
+                onCallEnded = {
+                    navController.navigate(AppDestination.PharmacistDispense.route) {
+                        popUpTo(AppDestination.PharmacistQueue.route) { inclusive = false }
+                    }
+                },
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(AppDestination.PharmacistDispense.route) {
+            val vm: PharmacistModuleViewModel = viewModel(
+                viewModelStoreOwner = remember(navController) {
+                    navController.getBackStackEntry(AppDestination.PharmacistQueue.route)
+                },
+                factory = factory
+            )
+            PharmacistDispenseScreen(
+                viewModel = vm,
+                onDone = {
+                    navController.popBackStack(AppDestination.PharmacistQueue.route, inclusive = false)
+                },
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        // ==================== Doctor Flow ====================
+        composable(AppDestination.DoctorLogin.route) {
+            DoctorLoginScreen(
+                onLoginSuccess = {
+                    navController.navigate(AppDestination.DoctorQueue.route) {
+                        popUpTo(AppDestination.DoctorLogin.route) { inclusive = true }
+                    }
+                },
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(AppDestination.DoctorQueue.route) {
+            val vm: DoctorModuleViewModel = viewModel(
+                viewModelStoreOwner = remember(navController) {
+                    navController.getBackStackEntry(AppDestination.DoctorQueue.route)
+                },
+                factory = factory
+            )
+            DoctorQueueScreen(
+                viewModel = vm,
+                onPatientSelect = { patientId ->
+                    navController.navigate(AppDestination.DoctorIncomingCall.createRoute(patientId))
+                },
+                onBack = {
+                    navController.popBackStack(AppDestination.RoleSelection.route, inclusive = false)
+                }
+            )
+        }
+
+        composable(
+            route = AppDestination.DoctorIncomingCall.route,
+            arguments = listOf(navArgument("patientId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val patientId = backStackEntry.arguments?.getString("patientId") ?: ""
+            val vm: DoctorModuleViewModel = viewModel(
+                viewModelStoreOwner = remember(navController) {
+                    navController.getBackStackEntry(AppDestination.DoctorQueue.route)
+                },
+                factory = factory
+            )
+            DoctorIncomingCallScreen(
+                viewModel = vm,
+                patientId = patientId,
+                onAccept = {
+                    navController.navigate(AppDestination.DoctorConsultation.createRoute(patientId)) {
+                        popUpTo(AppDestination.DoctorQueue.route) { inclusive = false }
+                    }
+                },
+                onDecline = { navController.popBackStack() }
+            )
+        }
+
+        composable(
+            route = AppDestination.DoctorConsultation.route,
+            arguments = listOf(navArgument("patientId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val patientId = backStackEntry.arguments?.getString("patientId") ?: ""
+            val vm: DoctorModuleViewModel = viewModel(
+                viewModelStoreOwner = remember(navController) {
+                    navController.getBackStackEntry(AppDestination.DoctorQueue.route)
+                },
+                factory = factory
+            )
+            DoctorConsultationScreen(
+                viewModel = vm,
+                patientId = patientId,
+                onPrescriptionGenerated = {
+                    navController.navigate(AppDestination.DoctorPrescriptionPreview.route)
+                },
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(AppDestination.DoctorPrescriptionPreview.route) {
+            val vm: DoctorModuleViewModel = viewModel(
+                viewModelStoreOwner = remember(navController) {
+                    navController.getBackStackEntry(AppDestination.DoctorQueue.route)
+                },
+                factory = factory
+            )
+            DoctorPrescriptionPreviewScreen(
+                viewModel = vm,
+                onDone = {
+                    navController.popBackStack(AppDestination.DoctorQueue.route, inclusive = false)
+                },
+                onBack = { navController.popBackStack() }
+            )
         }
     }
 }

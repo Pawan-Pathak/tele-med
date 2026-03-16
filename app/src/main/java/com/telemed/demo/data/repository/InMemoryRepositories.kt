@@ -1,30 +1,10 @@
 package com.telemed.demo.data.repository
 
 import com.telemed.demo.data.local.dummy.TeleMedMemoryStore
-import com.telemed.demo.domain.model.BasicVitalsData
-import com.telemed.demo.domain.model.DashboardData
-import com.telemed.demo.domain.model.DoctorCaseSnapshot
-import com.telemed.demo.domain.model.Doctor
-import com.telemed.demo.domain.model.DoctorConsultationForm
-import com.telemed.demo.domain.model.MedicationItem
-import com.telemed.demo.domain.model.Patient
-import com.telemed.demo.domain.model.PatientRegistrationData
-import com.telemed.demo.domain.model.PharmacistSnapshot
-import com.telemed.demo.domain.model.Prescription
-import com.telemed.demo.domain.model.SessionUser
-import com.telemed.demo.domain.model.SharedPatientProfile
-import com.telemed.demo.domain.model.SpokeLocation
-import com.telemed.demo.domain.model.UserRole
-import com.telemed.demo.domain.model.Vitals
-import com.telemed.demo.domain.repository.AuthRepository
-import com.telemed.demo.domain.repository.ConsultationRepository
-import com.telemed.demo.domain.repository.DashboardRepository
-import com.telemed.demo.domain.repository.DoctorRepository
-import com.telemed.demo.domain.repository.PatientRepository
-import com.telemed.demo.domain.repository.PrescriptionRepository
-import com.telemed.demo.domain.repository.VitalsRepository
-import com.telemed.demo.domain.repository.WorkflowRepository
+import com.telemed.demo.domain.model.*
+import com.telemed.demo.domain.repository.*
 import kotlinx.coroutines.delay
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.UUID
@@ -33,7 +13,7 @@ class InMemoryAuthRepository : AuthRepository {
     private var currentSession: SessionUser? = null
 
     override suspend fun login(email: String, password: String, role: UserRole): Result<SessionUser> {
-        delay(600)
+        delay(500)
         return if (email.contains("@") && password.length >= 4) {
             val session = SessionUser(
                 email = email,
@@ -48,209 +28,81 @@ class InMemoryAuthRepository : AuthRepository {
     }
 
     override suspend fun getCurrentSession(): SessionUser? = currentSession
-
-    override suspend fun logout() {
-        currentSession = null
-    }
-}
-
-class InMemoryWorkflowRepository(
-    private val store: TeleMedMemoryStore
-) : WorkflowRepository {
-    override suspend fun saveSpokeLocation(location: SpokeLocation) {
-        delay(100)
-        store.spokeLocation = location
-    }
-
-    override suspend fun getMappedDistricts(): List<String> = store.mappedDistricts
-
-    override suspend fun getMappedVillages(district: String): List<String> =
-        store.mappedVillagesByDistrict[district].orEmpty()
-
-    override suspend fun registerPatient(data: PatientRegistrationData): PatientRegistrationData {
-        delay(250)
-        val assignedId = data.copy(
-            uniqueId = if (data.uniqueId.isBlank()) "TM-${System.currentTimeMillis()}" else data.uniqueId
-        )
-        store.latestRegistration = assignedId
-        store.currentPatient = Patient(
-            id = assignedId.uniqueId,
-            fullName = assignedId.fullName,
-            age = assignedId.age,
-            gender = assignedId.gender,
-            phone = assignedId.mobileNumber
-        )
-        return assignedId
-    }
-
-    override suspend fun saveBasicVitals(data: BasicVitalsData) {
-        delay(200)
-        store.latestBasicVitals = data
-        store.latestVitals = Vitals(
-            heartRate = 76,
-            bloodPressure = data.bloodPressure,
-            temperatureC = data.temperatureC,
-            spo2 = 98
-        )
-    }
-
-    override suspend fun uploadReport(fileName: String) {
-        delay(120)
-        store.uploadedReports.add(fileName)
-    }
-
-    override suspend fun downloadReport(fileName: String): String {
-        delay(120)
-        return if (store.uploadedReports.contains(fileName)) {
-            "Downloaded $fileName"
-        } else {
-            "Report $fileName not found"
-        }
-    }
-
-    override suspend fun uploadDiagnostic(fileName: String) {
-        delay(120)
-        store.uploadedDiagnostics.add(fileName)
-    }
-
-    override suspend fun shareDataWithDoctorAndPharmacist() {
-        delay(150)
-        store.dataShared = true
-    }
-
-    override suspend fun getSharedPatientProfile(): SharedPatientProfile? {
-        if (!store.dataShared) return null
-        val registration = store.latestRegistration ?: return null
-        return SharedPatientProfile(
-            registration = registration,
-            location = store.spokeLocation,
-            vitals = store.latestBasicVitals,
-            uploadedReports = store.uploadedReports.toList(),
-            uploadedDiagnostics = store.uploadedDiagnostics.toList()
-        )
-    }
-
-    override suspend fun setPharmacistConsent(consent: Boolean) {
-        delay(100)
-        store.pharmacistConsent = consent
-    }
-
-    override suspend fun initiatePharmacistCall(): Boolean {
-        delay(180)
-        val allowed = store.pharmacistConsent == true
-        store.pharmacistCallInitiated = allowed
-        store.activeCall = allowed
-        return allowed
-    }
-
-    override suspend fun getPrescribedMedications(): List<MedicationItem> {
-        return store.doctorConsultationForm?.treatmentPlan ?: store.doctorMedicationTemplate
-    }
-
-    override suspend fun recordDispensation(notes: String) {
-        delay(120)
-        store.dispensationNotes = notes
-    }
-
-    override suspend fun getPharmacistSnapshot(): PharmacistSnapshot {
-        return PharmacistSnapshot(
-            patientProfile = getSharedPatientProfile(),
-            consentGiven = store.pharmacistConsent,
-            callInitiated = store.pharmacistCallInitiated,
-            prescribedMedications = getPrescribedMedications(),
-            dispensationNotes = store.dispensationNotes
-        )
-    }
-
-    override suspend fun getDoctorCaseByLocation(): DoctorCaseSnapshot {
-        return DoctorCaseSnapshot(
-            patientProfile = getSharedPatientProfile(),
-            doctorDecision = store.doctorDecision,
-            consultationForm = store.doctorConsultationForm,
-            generatedPdfName = store.generatedPrescriptionPdfName
-        )
-    }
-
-    override suspend fun setDoctorCallDecision(attend: Boolean) {
-        delay(90)
-        store.doctorDecision = if (attend) "Attended" else "Declined"
-        if (!attend) {
-            store.activeCall = false
-        }
-    }
-
-    override suspend fun saveDoctorConsultation(form: DoctorConsultationForm) {
-        delay(220)
-        store.doctorConsultationForm = form
-        val patientName = store.latestRegistration?.fullName ?: "Patient"
-        val doctorName = store.connectedDoctor?.name ?: "Doctor on Duty"
-        store.latestPrescription = Prescription(
-            id = UUID.randomUUID().toString(),
-            patientName = patientName,
-            doctorName = doctorName,
-            medications = form.treatmentPlan.map { "${it.name} ${it.dosage}, ${it.frequency}, ${it.time}" },
-            notes = form.recommendations
-        )
-    }
-
-    override suspend fun generatePrescriptionPdf(doctorName: String, clinicName: String): String {
-        delay(180)
-        val now = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmm"))
-        val filename = "Prescription_${clinicName.replace(" ", "")}_${doctorName.replace(" ", "")}_$now.pdf"
-        store.generatedPrescriptionPdfName = filename
-        return filename
-    }
+    override suspend fun logout() { currentSession = null }
 }
 
 class InMemoryPatientRepository(
     private val store: TeleMedMemoryStore
 ) : PatientRepository {
-    override suspend fun register(patient: Patient): Patient {
+    override suspend fun registerPatient(patient: Patient): Patient {
         delay(300)
-        store.currentPatient = patient
-        return patient
+        val registered = patient.copy(
+            id = if (patient.id.isBlank()) store.generatePatientId() else patient.id,
+            registeredAt = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")),
+            status = ConsultationStatus.REGISTERED
+        )
+        store.patients.add(registered)
+        store.patientQueue.add(
+            PatientQueueItem(registered, registered.registeredAt, ConsultationStatus.WAITING)
+        )
+        return registered
     }
 
-    override suspend fun getCurrentPatient(): Patient? = store.currentPatient
+    override suspend fun getPatients(): List<Patient> = store.patients.toList()
+
+    override suspend fun getPatientById(id: String): Patient? =
+        store.patients.find { it.id == id }
+
+    override suspend fun getRecentPatients(limit: Int): List<Patient> =
+        store.patients.sortedByDescending { it.registeredAt }.take(limit)
+
+    override suspend fun generatePatientId(): String = store.generatePatientId()
 }
 
-class InMemoryVitalsRepository(
+class InMemoryLocationRepository(
     private val store: TeleMedMemoryStore
-) : VitalsRepository {
-    override suspend fun saveVitals(vitals: Vitals) {
-        delay(250)
-        store.latestVitals = vitals
+) : LocationRepository {
+    override suspend fun getDistricts(): List<String> = store.districts
+    override suspend fun getVillages(district: String): List<String> =
+        store.villagesByDistrict[district].orEmpty()
+    override suspend fun getStates(): List<String> = store.states
+    override suspend fun saveSpokeLocation(location: SpokeLocation) {
+        store.spokeLocation = location
     }
-
-    override suspend fun getLatestVitals(): Vitals? = store.latestVitals
-}
-
-class InMemoryDoctorRepository(
-    private val store: TeleMedMemoryStore
-) : DoctorRepository {
-    override suspend fun getDoctors(): List<Doctor> {
-        delay(250)
-        return store.doctors.sortedBy { it.etaMinutes }
-    }
-
-    override suspend fun connectDoctor(doctorId: String): Doctor? {
-        delay(500)
-        val doctor = store.doctors.firstOrNull { it.id == doctorId && it.isAvailable }
-        store.connectedDoctor = doctor
-        return doctor
-    }
-
-    override suspend fun getConnectedDoctor(): Doctor? = store.connectedDoctor
+    override suspend fun getSpokeLocation(): SpokeLocation? = store.spokeLocation
 }
 
 class InMemoryConsultationRepository(
     private val store: TeleMedMemoryStore
 ) : ConsultationRepository {
+    override suspend fun getPatientQueue(): List<PatientQueueItem> =
+        store.patientQueue.toList()
+
+    override suspend fun updatePatientStatus(patientId: String, status: ConsultationStatus) {
+        val idx = store.patientQueue.indexOfFirst { it.patient.id == patientId }
+        if (idx >= 0) {
+            val item = store.patientQueue[idx]
+            store.patientQueue[idx] = item.copy(status = status)
+        }
+        val pIdx = store.patients.indexOfFirst { it.id == patientId }
+        if (pIdx >= 0) {
+            store.patients[pIdx] = store.patients[pIdx].copy(status = status)
+        }
+    }
+
+    override suspend fun setConsent(patientId: String, consent: Boolean) {
+        store.pharmacistConsent = consent
+        if (consent) {
+            updatePatientStatus(patientId, ConsultationStatus.IN_PROGRESS)
+        } else {
+            updatePatientStatus(patientId, ConsultationStatus.DECLINED)
+        }
+    }
+
     override suspend fun startCall(): Boolean {
         delay(300)
-        val canStart = store.connectedDoctor != null
-        store.activeCall = canStart
-        return canStart
+        store.activeCall = true
+        return true
     }
 
     override suspend fun endCall() {
@@ -261,40 +113,86 @@ class InMemoryConsultationRepository(
     override suspend fun isCallActive(): Boolean = store.activeCall
 }
 
+class InMemoryDoctorRepository(
+    private val store: TeleMedMemoryStore
+) : DoctorRepository {
+    override suspend fun getDoctors(): List<Doctor> =
+        store.doctors.sortedBy { it.etaMinutes }
+
+    override suspend fun getDoctorsByDistrict(district: String): List<Doctor> =
+        store.doctors.filter { it.district == district || it.isAvailable }
+
+    override suspend fun connectDoctor(doctorId: String): Doctor? {
+        delay(400)
+        val doctor = store.doctors.firstOrNull { it.id == doctorId && it.isAvailable }
+        store.connectedDoctor = doctor
+        return doctor
+    }
+
+    override suspend fun getConnectedDoctor(): Doctor? = store.connectedDoctor
+
+    override suspend fun saveDoctorConsultation(form: DoctorConsultationForm) {
+        delay(200)
+        store.doctorConsultationForm = form
+    }
+
+    override suspend fun getDoctorConsultation(): DoctorConsultationForm? =
+        store.doctorConsultationForm
+}
+
 class InMemoryPrescriptionRepository(
     private val store: TeleMedMemoryStore
 ) : PrescriptionRepository {
-    override suspend fun getLatestPrescription(): Prescription? = store.latestPrescription
-
-    override suspend fun generatePrescription(): Prescription? {
+    override suspend fun generatePrescription(
+        patient: Patient,
+        doctor: Doctor,
+        consultation: DoctorConsultationForm
+    ): Prescription {
         delay(300)
-        val patient = store.currentPatient ?: return null
-        val doctor = store.connectedDoctor ?: return null
-
         val prescription = Prescription(
-            id = UUID.randomUUID().toString(),
+            id = UUID.randomUUID().toString().take(8).uppercase(),
+            patientId = patient.id,
             patientName = patient.fullName,
+            patientAge = patient.age,
+            patientGender = patient.gender.name,
             doctorName = doctor.name,
-            medications = listOf("Paracetamol 500mg", "Hydration salts"),
-            notes = "Take medicines after meals for 3 days and monitor temperature."
+            doctorQualification = doctor.qualification,
+            clinicName = doctor.clinicName,
+            regNumber = doctor.regNumber,
+            date = LocalDate.now().format(DateTimeFormatter.ofPattern("dd-MM-yyyy")),
+            chiefComplaints = consultation.chiefComplaints,
+            diagnosis = consultation.diagnosis,
+            medicines = consultation.medicines,
+            labTests = consultation.labTests,
+            referral = consultation.referral,
+            recommendations = consultation.recommendations,
+            allergies = consultation.allergies,
+            procedures = consultation.procedures,
+            imagingNotes = consultation.imagingNotes
         )
-        store.latestPrescription = prescription
+        store.generatedPrescription = prescription
         return prescription
     }
-}
 
-class InMemoryDashboardRepository(
-    private val store: TeleMedMemoryStore
-) : DashboardRepository {
-    override suspend fun loadDashboard(): DashboardData {
-        delay(200)
-        return DashboardData(
-            patientName = store.currentPatient?.fullName ?: "Guest Patient",
-            lastVitals = store.latestVitals,
-            connectedDoctor = store.connectedDoctor,
-            hasActiveCall = store.activeCall,
-            latestPrescription = store.latestPrescription
-        )
+    override suspend fun getLatestPrescription(): Prescription? = store.generatedPrescription
+
+    override suspend fun getMedicinesForDispensing(): List<Medicine> =
+        store.generatedPrescription?.medicines ?: emptyList()
+
+    override suspend fun markMedicineDispensed(medicineName: String, dispensed: Boolean) {
+        store.dispensedMedicines[medicineName] = dispensed
     }
+
+    override suspend fun getDispensedStatus(): Map<String, Boolean> =
+        store.dispensedMedicines.toMap()
 }
 
+class InMemoryMockDataRepository(
+    private val store: TeleMedMemoryStore
+) : MockDataRepository {
+    override fun getDrugList(): List<DrugItem> = store.drugList
+    override fun getICD10List(): List<ICD10Item> = store.icd10List
+    override fun getLabTests(): List<String> = store.labTests
+    override fun getCommonSymptoms(): List<String> = store.commonSymptoms
+    override fun getKnownConditions(): List<String> = store.knownConditions
+}
