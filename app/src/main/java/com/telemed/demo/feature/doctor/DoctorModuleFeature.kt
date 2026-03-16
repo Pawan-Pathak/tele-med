@@ -15,9 +15,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -196,7 +198,8 @@ fun DoctorLoginScreen(
     var isLoading by remember { mutableStateOf(false) }
 
     Scaffold(
-        topBar = { AppTopBar(title = stringResource(R.string.role_doctor), onBack = onBack) }
+        topBar = { AppTopBar(title = stringResource(R.string.role_doctor), onBack = onBack) },
+        containerColor = BackgroundPage
     ) { padding ->
         Column(
             modifier = Modifier
@@ -211,7 +214,7 @@ fun DoctorLoginScreen(
 
             Surface(
                 shape = CircleShape,
-                color = DoctorColor.copy(alpha = 0.12f),
+                color = DoctorBg,
                 modifier = Modifier.size(80.dp)
             ) {
                 Box(contentAlignment = Alignment.Center) {
@@ -255,82 +258,128 @@ fun DoctorQueueScreen(
     LaunchedEffect(Unit) { viewModel.refreshQueue() }
 
     Scaffold(
-        topBar = { AppTopBar(title = stringResource(R.string.patient_queue), onBack = onBack) }
+        containerColor = BackgroundPage
     ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            // Doctor info bar
-            if (doctor != null) {
-                Card(
-                    modifier = Modifier.fillMaxWidth().padding(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = DoctorColor.copy(alpha = 0.08f))
-                ) {
-                    Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Person, contentDescription = null, tint = DoctorColor)
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column {
-                            Text(doctor!!.name, style = MaterialTheme.typography.titleSmall)
-                            Text("${doctor!!.qualification} • ${doctor!!.specialty}", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
-                        }
-                    }
-                }
-            }
+            // Hero header with doctor info
+            HeroHeader(
+                title = stringResource(R.string.patient_queue),
+                subtitle = doctor?.let { "${it.name} • ${it.specialty}" } ?: "",
+                moduleChip = "Doctor",
+                moduleColor = DoctorColor,
+                onBack = onBack,
+                stats = listOf(
+                    Pair("Waiting", queue.size.toString()),
+                    Pair("Today", queue.size.toString())
+                )
+            )
 
             if (queue.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("No patients waiting", style = MaterialTheme.typography.bodyLarge, color = TextSecondary)
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(Icons.Default.People, contentDescription = null, modifier = Modifier.size(64.dp), tint = TextSecondary)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text("No patients waiting", style = MaterialTheme.typography.bodyLarge, color = TextSecondary)
+                    }
                 }
             } else {
                 LazyColumn(
-                    modifier = Modifier.padding(horizontal = 16.dp),
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     items(queue) { item ->
                         Card(
                             modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.cardColors(containerColor = BackgroundCard),
                             elevation = CardDefaults.cardElevation(2.dp)
                         ) {
                             Column(modifier = Modifier.padding(16.dp)) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
+                                    // Avatar
+                                    Surface(
+                                        shape = CircleShape,
+                                        color = DoctorBg,
+                                        modifier = Modifier.size(44.dp)
+                                    ) {
+                                        Box(contentAlignment = Alignment.Center) {
+                                            Text(
+                                                item.patient.fullName.take(2).uppercase(),
+                                                style = MaterialTheme.typography.labelSmall,
+                                                fontWeight = FontWeight.Bold,
+                                                color = DoctorColor
+                                            )
+                                        }
+                                    }
+                                    Spacer(modifier = Modifier.width(12.dp))
                                     Column(modifier = Modifier.weight(1f)) {
-                                        Text(item.patient.fullName, style = MaterialTheme.typography.titleSmall)
+                                        Text(item.patient.fullName, style = MaterialTheme.typography.titleMedium, color = TextPrimary)
                                         Text("${item.patient.id} • ${item.patient.age}y ${item.patient.gender.name}", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
                                     }
                                     StatusBadge(item.status)
                                 }
-                                // Vitals summary
+
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                // Vitals summary row
                                 item.patient.vitals.let { v ->
-                                    Text(
-                                        "BP: ${v.bpSystolic ?: "—"}/${v.bpDiastolic ?: "—"} | SpO2: ${v.spo2 ?: "—"}% | Pulse: ${v.pulseRate ?: "—"}",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = TextSecondary
-                                    )
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .background(BackgroundPage, RoundedCornerShape(8.dp))
+                                            .padding(8.dp),
+                                        horizontalArrangement = Arrangement.SpaceEvenly
+                                    ) {
+                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                            Text("BP", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                                            Text("${v.bpSystolic ?: "—"}/${v.bpDiastolic ?: "—"}", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
+                                        }
+                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                            Text("SpO2", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                                            Text("${v.spo2 ?: "—"}%", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
+                                        }
+                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                            Text("Pulse", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                                            Text("${v.pulseRate ?: "—"}", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
+                                        }
+                                    }
                                 }
+
+                                Spacer(modifier = Modifier.height(4.dp))
+
                                 Text(
                                     "Complaint: ${item.patient.medicalHistory.primaryComplaint}",
                                     style = MaterialTheme.typography.bodySmall,
+                                    color = TextSecondary,
                                     maxLines = 1
                                 )
-                                Spacer(modifier = Modifier.height(8.dp))
+
+                                Spacer(modifier = Modifier.height(12.dp))
+
                                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                     Button(
                                         onClick = {
                                             viewModel.selectPatient(item.patient)
                                             onPatientSelect(item.patient.id)
                                         },
-                                        colors = ButtonDefaults.buttonColors(containerColor = StatusDone),
-                                        modifier = Modifier.weight(1f).height(44.dp)
+                                        colors = ButtonDefaults.buttonColors(containerColor = CallAcceptGreen),
+                                        modifier = Modifier.weight(1f).height(44.dp),
+                                        shape = RoundedCornerShape(24.dp)
                                     ) {
+                                        Icon(Icons.Default.Call, contentDescription = null, modifier = Modifier.size(18.dp))
+                                        Spacer(modifier = Modifier.width(4.dp))
                                         Text(stringResource(R.string.answer))
                                     }
                                     OutlinedButton(
                                         onClick = { },
-                                        modifier = Modifier.weight(1f).height(44.dp)
+                                        modifier = Modifier.weight(1f).height(44.dp),
+                                        shape = RoundedCornerShape(24.dp)
                                     ) {
-                                        Text(stringResource(R.string.decline))
+                                        Text(stringResource(R.string.decline), color = TextSecondary)
                                     }
                                 }
                             }
@@ -368,7 +417,7 @@ fun DoctorIncomingCallScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF0A1628)),
+            .background(CallDarkBg),
         contentAlignment = Alignment.Center
     ) {
         Column(
@@ -412,7 +461,7 @@ fun DoctorIncomingCallScreen(
                             onDecline()
                         },
                         modifier = Modifier.size(72.dp),
-                        colors = IconButtonDefaults.filledIconButtonColors(containerColor = AccentRed)
+                        colors = IconButtonDefaults.filledIconButtonColors(containerColor = CallDeclineRed)
                     ) {
                         Icon(Icons.Default.CallEnd, contentDescription = stringResource(R.string.decline_call), tint = Color.White, modifier = Modifier.size(36.dp))
                     }
@@ -428,7 +477,7 @@ fun DoctorIncomingCallScreen(
                             onAccept()
                         },
                         modifier = Modifier.size(72.dp),
-                        colors = IconButtonDefaults.filledIconButtonColors(containerColor = StatusDone)
+                        colors = IconButtonDefaults.filledIconButtonColors(containerColor = CallAcceptGreen)
                     ) {
                         Icon(Icons.Default.Call, contentDescription = stringResource(R.string.accept_call), tint = Color.White, modifier = Modifier.size(36.dp))
                     }
@@ -468,13 +517,27 @@ fun DoctorConsultationScreen(
     var selectedTab by remember { mutableIntStateOf(0) }
 
     Scaffold(
-        topBar = { AppTopBar(title = stringResource(R.string.consultation), onBack = onBack) }
+        topBar = { AppTopBar(title = stringResource(R.string.consultation), onBack = onBack) },
+        containerColor = BackgroundPage
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-            // Tabs: Patient Info | Consultation Form
-            TabRow(selectedTabIndex = selectedTab) {
-                Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }, text = { Text(stringResource(R.string.patient_details)) })
-                Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }, text = { Text("Rx Form") })
+            // Segmented tab chips
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                SelectableChip(
+                    text = stringResource(R.string.patient_details),
+                    selected = selectedTab == 0,
+                    onClick = { selectedTab = 0 }
+                )
+                SelectableChip(
+                    text = "Rx Form",
+                    selected = selectedTab == 1,
+                    onClick = { selectedTab = 1 }
+                )
             }
 
             when (selectedTab) {
@@ -486,40 +549,70 @@ fun DoctorConsultationScreen(
                             modifier = Modifier.verticalScroll(rememberScrollState()).padding(16.dp),
                             verticalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
+                            // Patient header card
                             Card(
                                 modifier = Modifier.fillMaxWidth(),
-                                colors = CardDefaults.cardColors(containerColor = DoctorColor.copy(alpha = 0.05f))
+                                shape = RoundedCornerShape(16.dp),
+                                colors = CardDefaults.cardColors(containerColor = DoctorBg)
                             ) {
                                 Column(modifier = Modifier.padding(16.dp)) {
-                                    Text(patient.fullName, style = MaterialTheme.typography.headlineSmall)
+                                    Text(patient.fullName, style = MaterialTheme.typography.headlineSmall, color = TextPrimary)
                                     Text("${patient.id} • ${patient.age}y • ${patient.gender.name}", style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
                                 }
                             }
-                            SectionHeader(stringResource(R.string.vitals_summary))
-                            patient.vitals.let { v ->
-                                PatientSummaryCard("Weight", "${v.weight ?: "—"} kg")
-                                PatientSummaryCard("Temp", "${v.temperature ?: "—"}°${v.temperatureUnit}")
-                                PatientSummaryCard("BP", "${v.bpSystolic ?: "—"}/${v.bpDiastolic ?: "—"}")
-                                PatientSummaryCard("Sugar", "${v.bloodSugar ?: "—"} mg/dL")
-                                PatientSummaryCard("Hb", "${v.hemoglobin ?: "—"} g/dL")
-                                PatientSummaryCard("SpO2", "${v.spo2 ?: "—"}%")
-                                PatientSummaryCard("Pulse", "${v.pulseRate ?: "—"} bpm")
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            SectionHeader(stringResource(R.string.vitals_summary), moduleColor = DoctorColor)
+
+                            // Vitals grid
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                patient.vitals.let { v ->
+                                    Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        VitalCard(label = "Weight", value = "${v.weight ?: "—"} kg", icon = Icons.Default.MonitorWeight)
+                                        VitalCard(label = "BP", value = "${v.bpSystolic ?: "—"}/${v.bpDiastolic ?: "—"}", icon = Icons.Default.Favorite)
+                                        VitalCard(label = "Hb", value = "${v.hemoglobin ?: "—"} g/dL", icon = Icons.Default.Bloodtype)
+                                    }
+                                    Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        VitalCard(label = "Temp", value = "${v.temperature ?: "—"}°${v.temperatureUnit}", icon = Icons.Default.Thermostat)
+                                        VitalCard(label = "Sugar", value = "${v.bloodSugar ?: "—"} mg/dL", icon = Icons.Default.Water)
+                                        VitalCard(label = "SpO2", value = "${v.spo2 ?: "—"}%", icon = Icons.Default.Air)
+                                    }
+                                }
                             }
-                            SectionHeader("Chief Complaint")
-                            Text(patient.medicalHistory.primaryComplaint, style = MaterialTheme.typography.bodyLarge)
-                            SectionHeader("Symptoms")
-                            Text(patient.medicalHistory.symptoms.joinToString(", ").ifEmpty { "None" }, style = MaterialTheme.typography.bodyMedium)
-                            SectionHeader("Known Conditions")
-                            Text(patient.medicalHistory.knownConditions.joinToString(", ").ifEmpty { "None" }, style = MaterialTheme.typography.bodyMedium)
-                            SectionHeader("Lifestyle")
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            SectionHeader("Chief Complaint", moduleColor = DoctorColor)
+                            Text(patient.medicalHistory.primaryComplaint, style = MaterialTheme.typography.bodyLarge, color = TextPrimary)
+
+                            Spacer(modifier = Modifier.height(4.dp))
+
+                            SectionHeader("Symptoms", moduleColor = DoctorColor)
+                            Text(patient.medicalHistory.symptoms.joinToString(", ").ifEmpty { "None" }, style = MaterialTheme.typography.bodyMedium, color = TextPrimary)
+
+                            Spacer(modifier = Modifier.height(4.dp))
+
+                            SectionHeader("Known Conditions", moduleColor = DoctorColor)
+                            Text(patient.medicalHistory.knownConditions.joinToString(", ").ifEmpty { "None" }, style = MaterialTheme.typography.bodyMedium, color = TextPrimary)
+
+                            Spacer(modifier = Modifier.height(4.dp))
+
+                            SectionHeader("Lifestyle", moduleColor = DoctorColor)
                             val lifestyle = patient.medicalHistory.lifestyle
                             val ls = mutableListOf<String>()
                             if (lifestyle.alcohol) ls.add("Alcohol")
                             if (lifestyle.tobacco) ls.add("Tobacco")
                             if (lifestyle.drugs) ls.add("Drugs")
-                            Text(ls.joinToString(", ").ifEmpty { "None reported" }, style = MaterialTheme.typography.bodyMedium)
-                            SectionHeader("Documents")
-                            Text("${patient.documents.size} file(s) uploaded", style = MaterialTheme.typography.bodyMedium)
+                            Text(ls.joinToString(", ").ifEmpty { "None reported" }, style = MaterialTheme.typography.bodyMedium, color = TextPrimary)
+
+                            Spacer(modifier = Modifier.height(4.dp))
+
+                            SectionHeader("Documents", moduleColor = DoctorColor)
+                            Text("${patient.documents.size} file(s) uploaded", style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
                         }
                     }
                 }
@@ -533,27 +626,29 @@ fun DoctorConsultationScreen(
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         // Section A: Chief Complaints
-                        SectionHeader("A. ${stringResource(R.string.chief_complaints)}")
+                        SectionHeader("A. ${stringResource(R.string.chief_complaints)}", moduleColor = DoctorColor)
                         LargeTextField(value = chiefComplaints, onValueChange = viewModel::setChiefComplaints, label = stringResource(R.string.chief_complaints), singleLine = false, minLines = 2)
 
                         // Section B: Diagnosis
-                        SectionHeader("B. ${stringResource(R.string.diagnosis)}")
+                        SectionHeader("B. ${stringResource(R.string.diagnosis)}", moduleColor = DoctorColor)
                         LargeTextField(value = diagnosis, onValueChange = viewModel::setDiagnosis, label = stringResource(R.string.diagnosis), singleLine = false, minLines = 2)
                         LargeTextField(value = icdCode, onValueChange = viewModel::setIcdCode, label = stringResource(R.string.icd_code))
 
                         // Section C: Treatment Plan
-                        SectionHeader("C. ${stringResource(R.string.treatment_plan)}")
+                        SectionHeader("C. ${stringResource(R.string.treatment_plan)}", moduleColor = DoctorColor)
                         medicines.forEachIndexed { index, medicine ->
                             Card(
                                 modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(16.dp),
+                                colors = CardDefaults.cardColors(containerColor = BackgroundCard),
                                 elevation = CardDefaults.cardElevation(1.dp)
                             ) {
                                 Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Text("Medicine ${index + 1}", style = MaterialTheme.typography.labelLarge, modifier = Modifier.weight(1f))
+                                        Text("Medicine ${index + 1}", style = MaterialTheme.typography.labelLarge, color = DoctorColor, modifier = Modifier.weight(1f))
                                         if (medicines.size > 1) {
                                             IconButton(onClick = { viewModel.removeMedicine(index) }) {
-                                                Icon(Icons.Default.RemoveCircle, contentDescription = stringResource(R.string.remove), tint = AccentRed)
+                                                Icon(Icons.Default.RemoveCircle, contentDescription = stringResource(R.string.remove), tint = CallDeclineRed)
                                             }
                                         }
                                     }
@@ -563,7 +658,7 @@ fun DoctorConsultationScreen(
                                         LargeTextField(value = medicine.durationDays.let { if (it == 0) "" else it.toString() }, onValueChange = { viewModel.updateMedicine(index, medicine.copy(durationDays = it.toIntOrNull() ?: 0)) }, label = stringResource(R.string.duration_days), keyboardType = KeyboardType.Number, modifier = Modifier.weight(1f))
                                     }
                                     // Frequency toggles
-                                    Text(stringResource(R.string.frequency), style = MaterialTheme.typography.labelMedium)
+                                    Text(stringResource(R.string.frequency), style = MaterialTheme.typography.labelMedium, color = TextSecondary)
                                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                         SelectableChip(text = stringResource(R.string.morning), selected = medicine.frequency.morning, onClick = { viewModel.updateMedicine(index, medicine.copy(frequency = medicine.frequency.copy(morning = !medicine.frequency.morning))) })
                                         SelectableChip(text = stringResource(R.string.afternoon), selected = medicine.frequency.afternoon, onClick = { viewModel.updateMedicine(index, medicine.copy(frequency = medicine.frequency.copy(afternoon = !medicine.frequency.afternoon))) })
@@ -573,12 +668,18 @@ fun DoctorConsultationScreen(
                                 }
                             }
                         }
-                        OutlinedButton(onClick = { viewModel.addMedicine() }, modifier = Modifier.fillMaxWidth().height(48.dp)) {
-                            Icon(Icons.Default.Add, contentDescription = null); Spacer(modifier = Modifier.width(4.dp)); Text(stringResource(R.string.add_medicine))
+                        OutlinedButton(
+                            onClick = { viewModel.addMedicine() },
+                            modifier = Modifier.fillMaxWidth().height(48.dp),
+                            shape = RoundedCornerShape(24.dp)
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = null, tint = DoctorColor)
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(stringResource(R.string.add_medicine), color = DoctorColor)
                         }
 
                         // Section D: Lab Tests
-                        SectionHeader("D. ${stringResource(R.string.lab_tests)}")
+                        SectionHeader("D. ${stringResource(R.string.lab_tests)}", moduleColor = DoctorColor)
                         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             viewModel.labTests.forEach { test ->
                                 SelectableChip(text = test, selected = selectedLabTests.contains(test), onClick = { viewModel.toggleLabTest(test) })
@@ -586,7 +687,7 @@ fun DoctorConsultationScreen(
                         }
 
                         // Section E: Other Clinical Info
-                        SectionHeader("E. Other Clinical Info")
+                        SectionHeader("E. Other Clinical Info", moduleColor = DoctorColor)
                         LargeTextField(value = imagingNotes, onValueChange = viewModel::setImagingNotes, label = stringResource(R.string.imaging_notes), singleLine = false, minLines = 2)
                         LargeTextField(value = procedures, onValueChange = viewModel::setProcedures, label = stringResource(R.string.procedures))
                         LargeTextField(value = allergies, onValueChange = viewModel::setAllergies, label = stringResource(R.string.allergies))
@@ -594,8 +695,12 @@ fun DoctorConsultationScreen(
 
                         // Referral
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(stringResource(R.string.referral_needed), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
-                            Switch(checked = referralNeeded, onCheckedChange = viewModel::setReferralNeeded)
+                            Text(stringResource(R.string.referral_needed), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f), color = TextPrimary)
+                            Switch(
+                                checked = referralNeeded,
+                                onCheckedChange = viewModel::setReferralNeeded,
+                                colors = SwitchDefaults.colors(checkedTrackColor = DoctorColor)
+                            )
                         }
                         if (referralNeeded) {
                             LargeTextField(value = referralSpecialty, onValueChange = viewModel::setReferralSpecialty, label = stringResource(R.string.specialty))
@@ -603,7 +708,7 @@ fun DoctorConsultationScreen(
                         }
                     }
 
-                    // Bottom buttons
+                    // Bottom button
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(16.dp),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -638,7 +743,8 @@ fun DoctorPrescriptionPreviewScreen(
     val doctor by viewModel.currentDoctor.collectAsState()
 
     Scaffold(
-        topBar = { AppTopBar(title = stringResource(R.string.preview_prescription), onBack = onBack) }
+        topBar = { AppTopBar(title = stringResource(R.string.preview_prescription), onBack = onBack) },
+        containerColor = BackgroundPage
     ) { padding ->
         val rx = prescription
         if (rx == null) {
@@ -646,7 +752,7 @@ fun DoctorPrescriptionPreviewScreen(
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     CircularProgressIndicator(color = DoctorColor)
                     Spacer(modifier = Modifier.height(16.dp))
-                    Text("Generating prescription...", style = MaterialTheme.typography.bodyLarge)
+                    Text("Generating prescription...", style = MaterialTheme.typography.bodyLarge, color = TextSecondary)
                 }
             }
         } else {
@@ -658,48 +764,59 @@ fun DoctorPrescriptionPreviewScreen(
                         .padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
+                    // Prescription ready card
+                    PrescriptionReadyCard()
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
                     // Prescription header
                     Card(
                         modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = DoctorColor.copy(alpha = 0.05f))
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = DoctorBg)
                     ) {
                         Column(
                             modifier = Modifier.padding(16.dp).fillMaxWidth(),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Text(rx.clinicName, style = MaterialTheme.typography.titleLarge, color = DoctorColor)
-                            Text(rx.doctorName, style = MaterialTheme.typography.titleMedium)
+                            Text(rx.doctorName, style = MaterialTheme.typography.titleMedium, color = TextPrimary)
                             Text(rx.doctorQualification, style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
                             Text("Reg: ${rx.regNumber}", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
-                            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                            Text("Date: ${rx.date}", style = MaterialTheme.typography.bodyMedium)
+                            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = DividerColor)
+                            Text("Date: ${rx.date}", style = MaterialTheme.typography.bodyMedium, color = TextPrimary)
                         }
                     }
 
                     Spacer(modifier = Modifier.height(8.dp))
 
                     // Patient info
-                    SectionHeader("Patient")
+                    SectionHeader("Patient", moduleColor = DoctorColor)
                     PatientSummaryCard("Name", rx.patientName)
                     PatientSummaryCard("ID", rx.patientId)
                     PatientSummaryCard("Age/Gender", "${rx.patientAge}y / ${rx.patientGender}")
 
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = DividerColor)
 
-                    SectionHeader("Diagnosis")
-                    Text(rx.diagnosis.ifEmpty { "—" }, style = MaterialTheme.typography.bodyLarge)
+                    SectionHeader("Diagnosis", moduleColor = DoctorColor)
+                    Text(rx.diagnosis.ifEmpty { "—" }, style = MaterialTheme.typography.bodyLarge, color = TextPrimary)
                     Text("Chief Complaints: ${rx.chiefComplaints}", style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
 
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = DividerColor)
 
                     // Rx symbol
                     Text("Rx", style = MaterialTheme.typography.headlineLarge, color = DoctorColor)
                     Spacer(modifier = Modifier.height(4.dp))
 
                     rx.medicines.forEachIndexed { idx, med ->
-                        Card(modifier = Modifier.fillMaxWidth(), elevation = CardDefaults.cardElevation(1.dp)) {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.cardColors(containerColor = BackgroundCard),
+                            elevation = CardDefaults.cardElevation(1.dp)
+                        ) {
                             Column(modifier = Modifier.padding(12.dp)) {
-                                Text("${idx + 1}. ${med.name} — ${med.dosage}", style = MaterialTheme.typography.titleSmall)
+                                Text("${idx + 1}. ${med.name} — ${med.dosage}", style = MaterialTheme.typography.titleSmall, color = TextPrimary)
                                 Text("${med.frequency} for ${med.durationDays} days", style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
                                 if (med.instructions.isNotBlank()) {
                                     Text(med.instructions, style = MaterialTheme.typography.bodySmall, color = TextSecondary)
@@ -710,33 +827,33 @@ fun DoctorPrescriptionPreviewScreen(
                     }
 
                     if (rx.labTests.isNotEmpty()) {
-                        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                        SectionHeader("Lab Tests Advised")
-                        rx.labTests.forEach { test -> Text("• $test", style = MaterialTheme.typography.bodyMedium) }
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = DividerColor)
+                        SectionHeader("Lab Tests Advised", moduleColor = DoctorColor)
+                        rx.labTests.forEach { test -> Text("• $test", style = MaterialTheme.typography.bodyMedium, color = TextPrimary) }
                     }
 
                     if (rx.recommendations.isNotBlank()) {
-                        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                        SectionHeader("Recommendations")
-                        Text(rx.recommendations, style = MaterialTheme.typography.bodyMedium)
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = DividerColor)
+                        SectionHeader("Recommendations", moduleColor = DoctorColor)
+                        Text(rx.recommendations, style = MaterialTheme.typography.bodyMedium, color = TextPrimary)
                     }
 
                     if (rx.referral != null) {
-                        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                        SectionHeader("Referral")
-                        Text("Specialty: ${rx.referral.specialty}", style = MaterialTheme.typography.bodyMedium)
-                        Text("Reason: ${rx.referral.reason}", style = MaterialTheme.typography.bodyMedium)
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = DividerColor)
+                        SectionHeader("Referral", moduleColor = DoctorColor)
+                        Text("Specialty: ${rx.referral.specialty}", style = MaterialTheme.typography.bodyMedium, color = TextPrimary)
+                        Text("Reason: ${rx.referral.reason}", style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
                     }
 
                     // Digital signature placeholder
                     Spacer(modifier = Modifier.height(16.dp))
-                    HorizontalDivider()
+                    HorizontalDivider(color = DividerColor)
                     Spacer(modifier = Modifier.height(8.dp))
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(60.dp)
-                            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp)),
+                            .background(BackgroundPage, RoundedCornerShape(8.dp)),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(stringResource(R.string.digital_signature), style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
@@ -750,16 +867,18 @@ fun DoctorPrescriptionPreviewScreen(
                 ) {
                     OutlinedButton(
                         onClick = { /* mock share */ },
-                        modifier = Modifier.weight(1f).height(52.dp)
+                        modifier = Modifier.weight(1f).height(52.dp),
+                        shape = RoundedCornerShape(24.dp)
                     ) {
-                        Icon(Icons.Default.Share, contentDescription = null)
+                        Icon(Icons.Default.Share, contentDescription = null, tint = DoctorColor)
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text(stringResource(R.string.share_prescription))
+                        Text(stringResource(R.string.share_prescription), color = DoctorColor)
                     }
                     Button(
                         onClick = onDone,
                         modifier = Modifier.weight(1f).height(52.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = DoctorColor)
+                        colors = ButtonDefaults.buttonColors(containerColor = DoctorColor),
+                        shape = RoundedCornerShape(24.dp)
                     ) {
                         Text(stringResource(R.string.done))
                     }

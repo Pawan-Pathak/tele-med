@@ -1,47 +1,58 @@
 package com.telemed.demo.ui.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Shapes
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
 
 private val LightColorScheme = lightColorScheme(
-    primary = PrimaryTeal,
+    primary = BrandPrimary,
     onPrimary = Color.White,
-    primaryContainer = PrimaryTealVeryLight,
-    onPrimaryContainer = PrimaryTealDark,
-    secondary = SecondaryGreen,
+    primaryContainer = BrandPrimaryContainer,
+    onPrimaryContainer = BrandPrimaryDark,
+    secondary = AccentTeal,
     onSecondary = Color.White,
-    secondaryContainer = SecondaryGreenLight,
-    onSecondaryContainer = SecondaryGreenDark,
-    tertiary = AccentBlue,
+    secondaryContainer = AccentTealContainer,
+    onSecondaryContainer = AccentTeal,
+    tertiary = PharmacistColor,
     onTertiary = Color.White,
-    background = BackgroundWarm,
+    background = BackgroundPage,
     onBackground = TextPrimary,
-    surface = SurfaceWarm,
+    surface = BackgroundCard,
     onSurface = TextPrimary,
-    surfaceVariant = Color(0xFFF5F0E8),
+    surfaceVariant = BackgroundPage,
     onSurfaceVariant = TextSecondary,
-    error = AccentRed,
+    error = StatusAlertText,
     onError = Color.White,
-    outline = DividerColor
+    outline = OutlineGray,
+    outlineVariant = DividerColor
 )
 
 private val DarkColorScheme = darkColorScheme(
-    primary = PrimaryTealLight,
-    onPrimary = PrimaryTealDark,
-    primaryContainer = PrimaryTeal,
-    onPrimaryContainer = PrimaryTealVeryLight,
-    secondary = SecondaryGreenLight,
-    onSecondary = SecondaryGreenDark,
-    background = BackgroundWarmDark,
+    primary = BrandPrimaryLight,
+    onPrimary = Color.White,
+    primaryContainer = BrandPrimaryDark,
+    onPrimaryContainer = BrandPrimaryContainer,
+    secondary = AccentTealLight,
+    onSecondary = Color.White,
+    background = BackgroundDark,
     onBackground = Color.White,
     surface = SurfaceDark,
     onSurface = Color.White,
     error = Color(0xFFEF9A9A),
     onError = Color(0xFFB71C1C)
+)
+
+private val AppShapes = Shapes(
+    small = RoundedCornerShape(10.dp),     // Form fields
+    medium = RoundedCornerShape(16.dp),    // Cards
+    large = RoundedCornerShape(24.dp),     // Buttons (pill), badges
+    extraLarge = RoundedCornerShape(20.dp) // Pill badges
 )
 
 @Composable
@@ -54,6 +65,7 @@ fun TeleMedTheme(
     MaterialTheme(
         colorScheme = colorScheme,
         typography = AppTypography,
+        shapes = AppShapes,
         content = content
     )
 }

@@ -15,9 +15,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
@@ -144,7 +146,8 @@ fun PharmacistLoginScreen(
     var isLoading by remember { mutableStateOf(false) }
 
     Scaffold(
-        topBar = { AppTopBar(title = stringResource(R.string.role_pharmacist), onBack = onBack) }
+        topBar = { AppTopBar(title = stringResource(R.string.role_pharmacist), onBack = onBack) },
+        containerColor = BackgroundPage
     ) { padding ->
         Column(
             modifier = Modifier
@@ -159,7 +162,7 @@ fun PharmacistLoginScreen(
 
             Surface(
                 shape = CircleShape,
-                color = PharmacistColor.copy(alpha = 0.12f),
+                color = PharmacistBg,
                 modifier = Modifier.size(80.dp)
             ) {
                 Box(contentAlignment = Alignment.Center) {
@@ -202,47 +205,59 @@ fun PharmacistQueueScreen(
     LaunchedEffect(Unit) { viewModel.loadQueue() }
 
     Scaffold(
-        topBar = { AppTopBar(title = stringResource(R.string.patient_queue), onBack = onBack) }
+        topBar = { AppTopBar(title = stringResource(R.string.patient_queue), onBack = onBack) },
+        containerColor = BackgroundPage
     ) { padding ->
-        if (queue.isEmpty()) {
-            Box(
-                modifier = Modifier.fillMaxSize().padding(padding),
-                contentAlignment = Alignment.Center
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+        ) {
+            // Module identity chip
+            Surface(
+                shape = RoundedCornerShape(20.dp),
+                color = PharmacistBg,
+                modifier = Modifier.padding(start = 16.dp, top = 12.dp, bottom = 4.dp)
             ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(Icons.Default.People, contentDescription = null, modifier = Modifier.size(64.dp), tint = TextSecondary)
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text("No patients in queue", style = MaterialTheme.typography.bodyLarge, color = TextSecondary)
+                Row(
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Icon(Icons.Default.LocalPharmacy, contentDescription = null, tint = PharmacistColor, modifier = Modifier.size(16.dp))
+                    Text("Pharmacist", style = MaterialTheme.typography.labelSmall, color = PharmacistColor)
                 }
             }
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                items(queue) { item ->
-                    Card(
-                        onClick = {
-                            viewModel.selectPatient(item.patient)
-                            onPatientSelect(item.patient.id)
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        elevation = CardDefaults.cardElevation(2.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth().padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(item.patient.fullName, style = MaterialTheme.typography.titleSmall)
-                                Text("ID: ${item.patient.id}", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
-                                Text(item.time, style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+
+            if (queue.isEmpty()) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(Icons.Default.People, contentDescription = null, modifier = Modifier.size(64.dp), tint = TextSecondary)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text("No patients in queue", style = MaterialTheme.typography.bodyLarge, color = TextSecondary)
+                    }
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(queue) { item ->
+                        PatientListCard(
+                            name = item.patient.fullName,
+                            patientId = item.patient.id,
+                            subtitle = item.time,
+                            status = item.status,
+                            onClick = {
+                                viewModel.selectPatient(item.patient)
+                                onPatientSelect(item.patient.id)
                             }
-                            StatusBadge(status = item.status)
-                        }
+                        )
                     }
                 }
             }
@@ -264,12 +279,14 @@ fun PharmacistConsentScreen(
     val patient = selectedPatient
 
     Scaffold(
-        topBar = { AppTopBar(title = stringResource(R.string.patient_consent), onBack = onBack) }
+        topBar = { AppTopBar(title = stringResource(R.string.patient_consent), onBack = onBack) },
+        containerColor = BackgroundPage
     ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
+                .verticalScroll(rememberScrollState())
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -278,16 +295,17 @@ fun PharmacistConsentScreen(
                 // Patient details card
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = PharmacistColor.copy(alpha = 0.08f))
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = PharmacistBg)
                 ) {
                     Column(modifier = Modifier.padding(20.dp)) {
-                        Text(patient.fullName, style = MaterialTheme.typography.headlineMedium)
+                        Text(patient.fullName, style = MaterialTheme.typography.headlineSmall, color = TextPrimary)
                         Text("ID: ${patient.id}", style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
                         Spacer(modifier = Modifier.height(8.dp))
-                        Text("Age: ${patient.age} • ${patient.gender.name}", style = MaterialTheme.typography.bodyLarge)
+                        Text("Age: ${patient.age} • ${patient.gender.name}", style = MaterialTheme.typography.bodyLarge, color = TextPrimary)
                         if (patient.medicalHistory.primaryComplaint.isNotEmpty()) {
                             Spacer(modifier = Modifier.height(4.dp))
-                            Text("Complaint: ${patient.medicalHistory.primaryComplaint}", style = MaterialTheme.typography.bodyMedium)
+                            Text("Complaint: ${patient.medicalHistory.primaryComplaint}", style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
                         }
                     }
                 }
@@ -296,51 +314,67 @@ fun PharmacistConsentScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             // Consent question
-            Card(modifier = Modifier.fillMaxWidth()) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = BackgroundCard),
+                elevation = CardDefaults.cardElevation(2.dp)
+            ) {
                 Column(
                     modifier = Modifier.padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(20.dp)
                 ) {
-                    Icon(Icons.Default.HowToReg, contentDescription = null, tint = PharmacistColor, modifier = Modifier.size(48.dp))
+                    Surface(
+                        shape = CircleShape,
+                        color = PharmacistBg,
+                        modifier = Modifier.size(64.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(Icons.Default.HowToReg, contentDescription = null, tint = PharmacistColor, modifier = Modifier.size(36.dp))
+                        }
+                    }
+
                     Text(
                         stringResource(R.string.consent_question),
                         style = MaterialTheme.typography.titleMedium,
-                        textAlign = TextAlign.Center
+                        textAlign = TextAlign.Center,
+                        color = TextPrimary
                     )
 
-                    Row(
+                    // Full-width stacked YES/NO buttons
+                    Column(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        // YES button
+                        // YES button — full width
                         Button(
                             onClick = {
                                 viewModel.setConsent(patientId, true)
                                 onConsentYes()
                             },
-                            modifier = Modifier.weight(1f).height(64.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = StatusDone),
-                            shape = RoundedCornerShape(16.dp)
+                            modifier = Modifier.fillMaxWidth().height(56.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = CallAcceptGreen),
+                            shape = RoundedCornerShape(24.dp)
                         ) {
-                            Icon(Icons.Default.CheckCircle, contentDescription = null, modifier = Modifier.size(28.dp))
+                            Icon(Icons.Default.CheckCircle, contentDescription = null, modifier = Modifier.size(24.dp))
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text(stringResource(R.string.yes), style = MaterialTheme.typography.titleMedium)
+                            Text(stringResource(R.string.yes), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                         }
 
-                        // NO button
+                        // NO button — full width
                         Button(
                             onClick = {
                                 viewModel.setConsent(patientId, false)
                                 onConsentNo()
                             },
-                            modifier = Modifier.weight(1f).height(64.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = StatusDeclined),
-                            shape = RoundedCornerShape(16.dp)
+                            modifier = Modifier.fillMaxWidth().height(56.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = CallDeclineRed),
+                            shape = RoundedCornerShape(24.dp)
                         ) {
-                            Icon(Icons.Default.Cancel, contentDescription = null, modifier = Modifier.size(28.dp))
+                            Icon(Icons.Default.Cancel, contentDescription = null, modifier = Modifier.size(24.dp))
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text(stringResource(R.string.no), style = MaterialTheme.typography.titleMedium)
+                            Text(stringResource(R.string.no), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                         }
                     }
                 }
@@ -376,7 +410,7 @@ fun PharmacistVideoCallScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .background(Color(0xFF1A1A2E)),
+                .background(CallDarkBg),
             contentAlignment = Alignment.Center
         ) {
             Column(
@@ -386,7 +420,7 @@ fun PharmacistVideoCallScreen(
                 // Avatar placeholder
                 Surface(
                     shape = CircleShape,
-                    color = Color.White.copy(alpha = 0.15f),
+                    color = Color.White.copy(alpha = 0.12f),
                     modifier = Modifier
                         .size(120.dp)
                         .then(if (isConnecting) Modifier.scale(pulseScale) else Modifier)
@@ -420,13 +454,13 @@ fun PharmacistVideoCallScreen(
                             .fillMaxWidth(0.85f)
                             .height(200.dp),
                         shape = RoundedCornerShape(16.dp),
-                        color = Color(0xFF2A2A4A)
+                        color = HeaderNavyLighter
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Icon(Icons.Default.Videocam, contentDescription = null, tint = Color.White.copy(alpha = 0.5f), modifier = Modifier.size(48.dp))
                                 Spacer(modifier = Modifier.height(8.dp))
-                                Text("Video Call Active", color = Color.White.copy(alpha = 0.7f))
+                                Text("Video Call Active", color = Color.White.copy(alpha = 0.7f), style = MaterialTheme.typography.bodyMedium)
                             }
                         }
                     }
@@ -441,7 +475,7 @@ fun PharmacistVideoCallScreen(
                         FilledIconButton(
                             onClick = { },
                             modifier = Modifier.size(56.dp),
-                            colors = IconButtonDefaults.filledIconButtonColors(containerColor = Color.White.copy(alpha = 0.2f))
+                            colors = IconButtonDefaults.filledIconButtonColors(containerColor = Color.White.copy(alpha = 0.15f))
                         ) {
                             Icon(Icons.Default.MicOff, contentDescription = stringResource(R.string.mute), tint = Color.White)
                         }
@@ -453,7 +487,7 @@ fun PharmacistVideoCallScreen(
                                 onCallEnded()
                             },
                             modifier = Modifier.size(56.dp),
-                            colors = IconButtonDefaults.filledIconButtonColors(containerColor = AccentRed)
+                            colors = IconButtonDefaults.filledIconButtonColors(containerColor = CallDeclineRed)
                         ) {
                             Icon(Icons.Default.CallEnd, contentDescription = stringResource(R.string.end_call), tint = Color.White)
                         }
@@ -462,7 +496,7 @@ fun PharmacistVideoCallScreen(
                         FilledIconButton(
                             onClick = { },
                             modifier = Modifier.size(56.dp),
-                            colors = IconButtonDefaults.filledIconButtonColors(containerColor = Color.White.copy(alpha = 0.2f))
+                            colors = IconButtonDefaults.filledIconButtonColors(containerColor = Color.White.copy(alpha = 0.15f))
                         ) {
                             Icon(Icons.Default.VideocamOff, contentDescription = null, tint = Color.White)
                         }
@@ -489,7 +523,8 @@ fun PharmacistDispenseScreen(
     LaunchedEffect(Unit) { viewModel.loadPrescriptionData() }
 
     Scaffold(
-        topBar = { AppTopBar(title = stringResource(R.string.prescribed_medicines), onBack = onBack) }
+        topBar = { AppTopBar(title = stringResource(R.string.prescribed_medicines), onBack = onBack) },
+        containerColor = BackgroundPage
     ) { padding ->
         Column(
             modifier = Modifier
@@ -510,35 +545,25 @@ fun PharmacistDispenseScreen(
                     }
                 }
             } else {
+                // Prescription ready card at the top
+                if (prescription != null) {
+                    PrescriptionReadyCard()
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
+
                 LazyColumn(
                     modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     items(medicines) { medicine ->
                         val isDispensed = dispensedStatus[medicine.name] ?: false
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            elevation = CardDefaults.cardElevation(2.dp),
-                            colors = CardDefaults.cardColors(
-                                containerColor = if (isDispensed) StatusDone.copy(alpha = 0.08f) else CardBackground
-                            )
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth().padding(16.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Checkbox(
-                                    checked = isDispensed,
-                                    onCheckedChange = { viewModel.toggleDispensed(medicine.name) }
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(medicine.name, style = MaterialTheme.typography.titleSmall)
-                                    Text("${medicine.dosage} • ${medicine.frequency}", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
-                                    Text("${medicine.durationDays} days • ${medicine.instructions}", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
-                                }
-                            }
-                        }
+                        PrescriptionItemCard(
+                            medicineName = medicine.name,
+                            details = "${medicine.dosage} • ${medicine.frequency}",
+                            subDetails = "${medicine.durationDays} days • ${medicine.instructions}",
+                            isDispensed = isDispensed,
+                            onToggleDispensed = { viewModel.toggleDispensed(medicine.name) }
+                        )
                     }
                 }
 
