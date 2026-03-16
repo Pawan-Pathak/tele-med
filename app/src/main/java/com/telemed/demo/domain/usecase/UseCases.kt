@@ -1,157 +1,100 @@
 package com.telemed.demo.domain.usecase
 
-import com.telemed.demo.domain.model.DashboardData
-import com.telemed.demo.domain.model.DoctorCaseSnapshot
-import com.telemed.demo.domain.model.Doctor
-import com.telemed.demo.domain.model.DoctorConsultationForm
-import com.telemed.demo.domain.model.MedicationItem
-import com.telemed.demo.domain.model.Patient
-import com.telemed.demo.domain.model.PatientRegistrationData
-import com.telemed.demo.domain.model.PharmacistSnapshot
-import com.telemed.demo.domain.model.Prescription
-import com.telemed.demo.domain.model.SessionUser
-import com.telemed.demo.domain.model.SharedPatientProfile
-import com.telemed.demo.domain.model.SpokeLocation
-import com.telemed.demo.domain.model.UserRole
-import com.telemed.demo.domain.model.Vitals
-import com.telemed.demo.domain.model.BasicVitalsData
-import com.telemed.demo.domain.repository.AuthRepository
-import com.telemed.demo.domain.repository.ConsultationRepository
-import com.telemed.demo.domain.repository.DashboardRepository
-import com.telemed.demo.domain.repository.DoctorRepository
-import com.telemed.demo.domain.repository.PatientRepository
-import com.telemed.demo.domain.repository.PrescriptionRepository
-import com.telemed.demo.domain.repository.VitalsRepository
-import com.telemed.demo.domain.repository.WorkflowRepository
+import com.telemed.demo.domain.model.*
+import com.telemed.demo.domain.repository.*
 
-class LoginUseCase(private val repository: AuthRepository) {
-    suspend operator fun invoke(email: String, password: String, role: UserRole): Result<SessionUser> =
-        repository.login(email, password, role)
+// Auth
+class LoginUseCase(private val repo: AuthRepository) {
+    suspend operator fun invoke(email: String, password: String, role: UserRole) =
+        repo.login(email, password, role)
 }
 
-class GetCurrentSessionUseCase(private val repository: AuthRepository) {
-    suspend operator fun invoke(): SessionUser? = repository.getCurrentSession()
+class LogoutUseCase(private val repo: AuthRepository) {
+    suspend operator fun invoke() = repo.logout()
 }
 
-class LogoutUseCase(private val repository: AuthRepository) {
-    suspend operator fun invoke() = repository.logout()
+// Patient
+class RegisterPatientUseCase(private val repo: PatientRepository) {
+    suspend operator fun invoke(patient: Patient) = repo.registerPatient(patient)
 }
 
-class SaveSpokeLocationUseCase(private val repository: WorkflowRepository) {
-    suspend operator fun invoke(location: SpokeLocation) = repository.saveSpokeLocation(location)
+class GetPatientsUseCase(private val repo: PatientRepository) {
+    suspend operator fun invoke() = repo.getPatients()
 }
 
-class GetMappedDistrictsUseCase(private val repository: WorkflowRepository) {
-    suspend operator fun invoke(): List<String> = repository.getMappedDistricts()
+class GetRecentPatientsUseCase(private val repo: PatientRepository) {
+    suspend operator fun invoke(limit: Int = 10) = repo.getRecentPatients(limit)
 }
 
-class GetMappedVillagesUseCase(private val repository: WorkflowRepository) {
-    suspend operator fun invoke(district: String): List<String> = repository.getMappedVillages(district)
+class GeneratePatientIdUseCase(private val repo: PatientRepository) {
+    suspend operator fun invoke() = repo.generatePatientId()
 }
 
-class RegisterPatientProfileUseCase(private val repository: WorkflowRepository) {
-    suspend operator fun invoke(data: PatientRegistrationData): PatientRegistrationData =
-        repository.registerPatient(data)
+// Location
+class GetDistrictsUseCase(private val repo: LocationRepository) {
+    suspend operator fun invoke() = repo.getDistricts()
 }
 
-class SaveBasicVitalsUseCase(private val repository: WorkflowRepository) {
-    suspend operator fun invoke(data: BasicVitalsData) = repository.saveBasicVitals(data)
+class GetVillagesUseCase(private val repo: LocationRepository) {
+    suspend operator fun invoke(district: String) = repo.getVillages(district)
 }
 
-class UploadReportUseCase(private val repository: WorkflowRepository) {
-    suspend operator fun invoke(fileName: String) = repository.uploadReport(fileName)
+class GetStatesUseCase(private val repo: LocationRepository) {
+    suspend operator fun invoke() = repo.getStates()
 }
 
-class DownloadReportUseCase(private val repository: WorkflowRepository) {
-    suspend operator fun invoke(fileName: String): String = repository.downloadReport(fileName)
+class SaveSpokeLocationUseCase(private val repo: LocationRepository) {
+    suspend operator fun invoke(location: SpokeLocation) = repo.saveSpokeLocation(location)
 }
 
-class UploadDiagnosticUseCase(private val repository: WorkflowRepository) {
-    suspend operator fun invoke(fileName: String) = repository.uploadDiagnostic(fileName)
+// Consultation
+class GetPatientQueueUseCase(private val repo: ConsultationRepository) {
+    suspend operator fun invoke() = repo.getPatientQueue()
 }
 
-class ShareDataUseCase(private val repository: WorkflowRepository) {
-    suspend operator fun invoke() = repository.shareDataWithDoctorAndPharmacist()
+class SetConsentUseCase(private val repo: ConsultationRepository) {
+    suspend operator fun invoke(patientId: String, consent: Boolean) = repo.setConsent(patientId, consent)
 }
 
-class GetSharedPatientProfileUseCase(private val repository: WorkflowRepository) {
-    suspend operator fun invoke(): SharedPatientProfile? = repository.getSharedPatientProfile()
+class StartCallUseCase(private val repo: ConsultationRepository) {
+    suspend operator fun invoke() = repo.startCall()
 }
 
-class SetPharmacistConsentUseCase(private val repository: WorkflowRepository) {
-    suspend operator fun invoke(consent: Boolean) = repository.setPharmacistConsent(consent)
+class EndCallUseCase(private val repo: ConsultationRepository) {
+    suspend operator fun invoke() = repo.endCall()
 }
 
-class InitiatePharmacistCallUseCase(private val repository: WorkflowRepository) {
-    suspend operator fun invoke(): Boolean = repository.initiatePharmacistCall()
+// Doctor
+class GetDoctorsUseCase(private val repo: DoctorRepository) {
+    suspend operator fun invoke() = repo.getDoctors()
 }
 
-class GetPrescribedMedicationsUseCase(private val repository: WorkflowRepository) {
-    suspend operator fun invoke(): List<MedicationItem> = repository.getPrescribedMedications()
+class ConnectDoctorUseCase(private val repo: DoctorRepository) {
+    suspend operator fun invoke(doctorId: String) = repo.connectDoctor(doctorId)
 }
 
-class RecordDispensationUseCase(private val repository: WorkflowRepository) {
-    suspend operator fun invoke(notes: String) = repository.recordDispensation(notes)
+class SaveDoctorConsultationUseCase(private val repo: DoctorRepository) {
+    suspend operator fun invoke(form: DoctorConsultationForm) = repo.saveDoctorConsultation(form)
 }
 
-class GetPharmacistSnapshotUseCase(private val repository: WorkflowRepository) {
-    suspend operator fun invoke(): PharmacistSnapshot = repository.getPharmacistSnapshot()
+// Prescription
+class GeneratePrescriptionUseCase(private val repo: PrescriptionRepository) {
+    suspend operator fun invoke(patient: Patient, doctor: Doctor, consultation: DoctorConsultationForm) =
+        repo.generatePrescription(patient, doctor, consultation)
 }
 
-class GetDoctorCaseByLocationUseCase(private val repository: WorkflowRepository) {
-    suspend operator fun invoke(): DoctorCaseSnapshot = repository.getDoctorCaseByLocation()
+class GetLatestPrescriptionUseCase(private val repo: PrescriptionRepository) {
+    suspend operator fun invoke() = repo.getLatestPrescription()
 }
 
-class SetDoctorCallDecisionUseCase(private val repository: WorkflowRepository) {
-    suspend operator fun invoke(attend: Boolean) = repository.setDoctorCallDecision(attend)
+class GetMedicinesForDispensingUseCase(private val repo: PrescriptionRepository) {
+    suspend operator fun invoke() = repo.getMedicinesForDispensing()
 }
 
-class SaveDoctorConsultationUseCase(private val repository: WorkflowRepository) {
-    suspend operator fun invoke(form: DoctorConsultationForm) = repository.saveDoctorConsultation(form)
+class MarkMedicineDispensedUseCase(private val repo: PrescriptionRepository) {
+    suspend operator fun invoke(name: String, dispensed: Boolean) = repo.markMedicineDispensed(name, dispensed)
 }
 
-class GeneratePrescriptionPdfUseCase(private val repository: WorkflowRepository) {
-    suspend operator fun invoke(doctorName: String, clinicName: String): String =
-        repository.generatePrescriptionPdf(doctorName, clinicName)
+class GetDispensedStatusUseCase(private val repo: PrescriptionRepository) {
+    suspend operator fun invoke() = repo.getDispensedStatus()
 }
-
-class RegisterPatientUseCase(private val repository: PatientRepository) {
-    suspend operator fun invoke(patient: Patient): Patient = repository.register(patient)
-}
-
-class SaveVitalsUseCase(private val repository: VitalsRepository) {
-    suspend operator fun invoke(vitals: Vitals) = repository.saveVitals(vitals)
-}
-
-class GetDoctorPoolUseCase(private val repository: DoctorRepository) {
-    suspend operator fun invoke(): List<Doctor> = repository.getDoctors()
-}
-
-class ConnectDoctorUseCase(private val repository: DoctorRepository) {
-    suspend operator fun invoke(doctorId: String): Doctor? = repository.connectDoctor(doctorId)
-}
-
-class StartCallUseCase(private val repository: ConsultationRepository) {
-    suspend operator fun invoke(): Boolean = repository.startCall()
-}
-
-class EndCallUseCase(private val repository: ConsultationRepository) {
-    suspend operator fun invoke() = repository.endCall()
-}
-
-class GetCallStatusUseCase(private val repository: ConsultationRepository) {
-    suspend operator fun invoke(): Boolean = repository.isCallActive()
-}
-
-class GetPrescriptionUseCase(private val repository: PrescriptionRepository) {
-    suspend operator fun invoke(): Prescription? = repository.getLatestPrescription()
-}
-
-class GeneratePrescriptionUseCase(private val repository: PrescriptionRepository) {
-    suspend operator fun invoke(): Prescription? = repository.generatePrescription()
-}
-
-class GetDashboardUseCase(private val repository: DashboardRepository) {
-    suspend operator fun invoke(): DashboardData = repository.loadDashboard()
-}
-

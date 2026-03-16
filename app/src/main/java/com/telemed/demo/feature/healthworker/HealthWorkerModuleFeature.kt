@@ -1,359 +1,832 @@
 package com.telemed.demo.feature.healthworker
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Switch
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.telemed.demo.domain.model.BasicVitalsData
-import com.telemed.demo.domain.model.LifestyleHistory
-import com.telemed.demo.domain.model.PatientRegistrationData
-import com.telemed.demo.domain.model.SpokeLocation
-import com.telemed.demo.domain.usecase.DownloadReportUseCase
-import com.telemed.demo.domain.usecase.GetMappedDistrictsUseCase
-import com.telemed.demo.domain.usecase.GetMappedVillagesUseCase
-import com.telemed.demo.domain.usecase.RegisterPatientProfileUseCase
-import com.telemed.demo.domain.usecase.SaveBasicVitalsUseCase
-import com.telemed.demo.domain.usecase.SaveSpokeLocationUseCase
-import com.telemed.demo.domain.usecase.ShareDataUseCase
-import com.telemed.demo.domain.usecase.UploadDiagnosticUseCase
-import com.telemed.demo.domain.usecase.UploadReportUseCase
-import com.telemed.demo.ui.responsive.ResponsiveScreen
+import com.telemed.demo.R
+import com.telemed.demo.domain.model.*
+import com.telemed.demo.domain.usecase.*
+import com.telemed.demo.ui.components.*
+import com.telemed.demo.ui.responsive.AppTopBar
+import com.telemed.demo.ui.theme.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
-data class HealthWorkerUiState(
-    val spokeName: String = "",
-    val district: String = "",
-    val village: String = "",
-    val localDateTime: String = "",
-    val districts: List<String> = emptyList(),
-    val villages: List<String> = emptyList(),
-    val fullName: String = "",
-    val spouseOrFatherName: String = "",
-    val gender: String = "",
-    val age: String = "",
-    val dob: String = "",
-    val state: String = "",
-    val mobile: String = "",
-    val aadhaar: String = "",
-    val uniqueId: String = "",
-    val weight: String = "",
-    val temperature: String = "",
-    val bloodPressure: String = "",
-    val bloodSugar: String = "",
-    val hemoglobin: String = "",
-    val otherVitals: String = "",
-    val primaryComplaint: String = "",
-    val basicSymptoms: String = "",
-    val medicalHistory: String = "",
-    val alcohol: Boolean = false,
-    val tobacco: Boolean = false,
-    val drugs: Boolean = false,
-    val reportFileName: String = "cbc_report.pdf",
-    val diagnosticFileName: String = "xray_chest.png",
-    val statusMessage: String = ""
-)
+// ============ ViewModel ============
 
 class HealthWorkerModuleViewModel(
-    private val getMappedDistrictsUseCase: GetMappedDistrictsUseCase,
-    private val getMappedVillagesUseCase: GetMappedVillagesUseCase,
+    private val getDistrictsUseCase: GetDistrictsUseCase,
+    private val getVillagesUseCase: GetVillagesUseCase,
+    private val getStatesUseCase: GetStatesUseCase,
     private val saveSpokeLocationUseCase: SaveSpokeLocationUseCase,
-    private val registerPatientProfileUseCase: RegisterPatientProfileUseCase,
-    private val saveBasicVitalsUseCase: SaveBasicVitalsUseCase,
-    private val uploadReportUseCase: UploadReportUseCase,
-    private val downloadReportUseCase: DownloadReportUseCase,
-    private val uploadDiagnosticUseCase: UploadDiagnosticUseCase,
-    private val shareDataUseCase: ShareDataUseCase
+    private val registerPatientUseCase: RegisterPatientUseCase,
+    private val getRecentPatientsUseCase: GetRecentPatientsUseCase
 ) : ViewModel() {
-    private val _uiState = MutableStateFlow(HealthWorkerUiState())
-    val uiState: StateFlow<HealthWorkerUiState> = _uiState.asStateFlow()
 
-    fun bootstrap() {
+    // Session setup
+    private val _spokeName = MutableStateFlow("")
+    val spokeName: StateFlow<String> = _spokeName.asStateFlow()
+    private val _selectedDistrict = MutableStateFlow("")
+    val selectedDistrict: StateFlow<String> = _selectedDistrict.asStateFlow()
+    private val _selectedVillage = MutableStateFlow("")
+    val selectedVillage: StateFlow<String> = _selectedVillage.asStateFlow()
+    private val _districts = MutableStateFlow<List<String>>(emptyList())
+    val districts: StateFlow<List<String>> = _districts.asStateFlow()
+    private val _villages = MutableStateFlow<List<String>>(emptyList())
+    val villages: StateFlow<List<String>> = _villages.asStateFlow()
+    private val _states = MutableStateFlow<List<String>>(emptyList())
+    val states: StateFlow<List<String>> = _states.asStateFlow()
+    private val _currentDateTime = MutableStateFlow("")
+    val currentDateTime: StateFlow<String> = _currentDateTime.asStateFlow()
+
+    // Dashboard
+    private val _recentPatients = MutableStateFlow<List<Patient>>(emptyList())
+    val recentPatients: StateFlow<List<Patient>> = _recentPatients.asStateFlow()
+    private val _syncStatus = MutableStateFlow("Synced")
+    val syncStatus: StateFlow<String> = _syncStatus.asStateFlow()
+
+    // Registration form
+    private val _fullName = MutableStateFlow("")
+    val fullName: StateFlow<String> = _fullName.asStateFlow()
+    private val _guardianName = MutableStateFlow("")
+    val guardianName: StateFlow<String> = _guardianName.asStateFlow()
+    private val _gender = MutableStateFlow(Gender.MALE)
+    val gender: StateFlow<Gender> = _gender.asStateFlow()
+    private val _age = MutableStateFlow("")
+    val age: StateFlow<String> = _age.asStateFlow()
+    private val _dob = MutableStateFlow("")
+    val dob: StateFlow<String> = _dob.asStateFlow()
+    private val _mobile = MutableStateFlow("")
+    val mobile: StateFlow<String> = _mobile.asStateFlow()
+    private val _aadhaar = MutableStateFlow("")
+    val aadhaar: StateFlow<String> = _aadhaar.asStateFlow()
+
+    // Address
+    private val _regVillage = MutableStateFlow("")
+    val regVillage: StateFlow<String> = _regVillage.asStateFlow()
+    private val _regDistrict = MutableStateFlow("")
+    val regDistrict: StateFlow<String> = _regDistrict.asStateFlow()
+    private val _regState = MutableStateFlow("")
+    val regState: StateFlow<String> = _regState.asStateFlow()
+    private val _regVillages = MutableStateFlow<List<String>>(emptyList())
+    val regVillages: StateFlow<List<String>> = _regVillages.asStateFlow()
+
+    // Vitals
+    private val _weight = MutableStateFlow("")
+    val weight: StateFlow<String> = _weight.asStateFlow()
+    private val _temperature = MutableStateFlow("")
+    val temperature: StateFlow<String> = _temperature.asStateFlow()
+    private val _tempUnit = MutableStateFlow("F")
+    val tempUnit: StateFlow<String> = _tempUnit.asStateFlow()
+    private val _bpSystolic = MutableStateFlow("")
+    val bpSystolic: StateFlow<String> = _bpSystolic.asStateFlow()
+    private val _bpDiastolic = MutableStateFlow("")
+    val bpDiastolic: StateFlow<String> = _bpDiastolic.asStateFlow()
+    private val _bloodSugar = MutableStateFlow("")
+    val bloodSugar: StateFlow<String> = _bloodSugar.asStateFlow()
+    private val _hemoglobin = MutableStateFlow("")
+    val hemoglobin: StateFlow<String> = _hemoglobin.asStateFlow()
+    private val _spo2 = MutableStateFlow("")
+    val spo2: StateFlow<String> = _spo2.asStateFlow()
+    private val _pulseRate = MutableStateFlow("")
+    val pulseRate: StateFlow<String> = _pulseRate.asStateFlow()
+
+    // Medical History
+    private val _primaryComplaint = MutableStateFlow("")
+    val primaryComplaint: StateFlow<String> = _primaryComplaint.asStateFlow()
+    private val _selectedSymptoms = MutableStateFlow<Set<String>>(emptySet())
+    val selectedSymptoms: StateFlow<Set<String>> = _selectedSymptoms.asStateFlow()
+    private val _selectedConditions = MutableStateFlow<Set<String>>(emptySet())
+    val selectedConditions: StateFlow<Set<String>> = _selectedConditions.asStateFlow()
+    private val _alcohol = MutableStateFlow(false)
+    val alcohol: StateFlow<Boolean> = _alcohol.asStateFlow()
+    private val _tobacco = MutableStateFlow(false)
+    val tobacco: StateFlow<Boolean> = _tobacco.asStateFlow()
+    private val _drugs = MutableStateFlow(false)
+    val drugs: StateFlow<Boolean> = _drugs.asStateFlow()
+
+    // Documents
+    private val _uploadedFiles = MutableStateFlow<List<DocumentFile>>(emptyList())
+    val uploadedFiles: StateFlow<List<DocumentFile>> = _uploadedFiles.asStateFlow()
+
+    // Registration result
+    private val _registeredPatient = MutableStateFlow<Patient?>(null)
+    val registeredPatient: StateFlow<Patient?> = _registeredPatient.asStateFlow()
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+
+    val symptoms = listOf("Fever", "Cough", "Headache", "Fatigue", "Pain", "Breathlessness", "Other")
+    val conditions = listOf("Diabetes", "Hypertension", "TB", "Heart Disease", "None")
+
+    init {
+        updateDateTime()
+        loadData()
+    }
+
+    private fun updateDateTime() {
+        _currentDateTime.value = LocalDateTime.now()
+            .format(DateTimeFormatter.ofPattern("dd MMM yyyy, hh:mm a"))
+    }
+
+    private fun loadData() {
         viewModelScope.launch {
-            val districts = getMappedDistrictsUseCase()
-            _uiState.update {
-                it.copy(
-                    districts = districts,
-                    district = districts.firstOrNull().orEmpty(),
-                    localDateTime = LocalDateTime.now().toString()
-                )
-            }
-            loadVillages(_uiState.value.district)
+            _districts.value = getDistrictsUseCase()
+            _states.value = getStatesUseCase()
+            _recentPatients.value = getRecentPatientsUseCase()
         }
     }
 
-    private fun loadVillages(district: String) {
+    fun refreshDashboard() {
         viewModelScope.launch {
-            val villages = getMappedVillagesUseCase(district)
-            _uiState.update {
-                it.copy(villages = villages, village = villages.firstOrNull().orEmpty())
-            }
+            _recentPatients.value = getRecentPatientsUseCase()
         }
     }
 
-    fun updateField(transform: (HealthWorkerUiState) -> HealthWorkerUiState) {
-        _uiState.update(transform)
-    }
-
-    fun onDistrictSelected(district: String) {
-        _uiState.update { it.copy(district = district) }
-        loadVillages(district)
-    }
-
-    fun onVillageSelected(village: String) {
-        _uiState.update { it.copy(village = village) }
-    }
-
-    fun saveAndShare() {
+    fun setSpokeName(name: String) { _spokeName.value = name }
+    fun setDistrict(district: String) {
+        _selectedDistrict.value = district
         viewModelScope.launch {
-            val state = _uiState.value
-            val registration = registerPatientProfileUseCase(
-                PatientRegistrationData(
-                    uniqueId = state.uniqueId,
-                    fullName = state.fullName,
-                    spouseOrFatherName = state.spouseOrFatherName,
-                    gender = state.gender,
-                    age = state.age.toIntOrNull() ?: 0,
-                    dob = state.dob,
-                    village = state.village,
-                    district = state.district,
-                    state = state.state,
-                    mobileNumber = state.mobile,
-                    aadhaarNumber = state.aadhaar
-                )
-            )
+            _villages.value = getVillagesUseCase(district)
+            _selectedVillage.value = ""
+        }
+    }
+    fun setVillage(village: String) { _selectedVillage.value = village }
 
+    fun saveSession() {
+        viewModelScope.launch {
             saveSpokeLocationUseCase(
                 SpokeLocation(
-                    spokeName = state.spokeName,
-                    district = state.district,
-                    village = state.village,
-                    localDateTimeIso = state.localDateTime
+                    _spokeName.value,
+                    _selectedDistrict.value,
+                    _selectedVillage.value,
+                    LocalDateTime.now().toString()
                 )
             )
-
-            saveBasicVitalsUseCase(
-                BasicVitalsData(
-                    weightKg = state.weight.toDoubleOrNull() ?: 0.0,
-                    temperatureC = state.temperature.toDoubleOrNull() ?: 0.0,
-                    bloodPressure = state.bloodPressure,
-                    bloodSugar = state.bloodSugar.toDoubleOrNull() ?: 0.0,
-                    hemoglobin = state.hemoglobin.toDoubleOrNull() ?: 0.0,
-                    otherVitals = state.otherVitals,
-                    primaryComplaint = state.primaryComplaint,
-                    basicSymptoms = state.basicSymptoms,
-                    medicalHistory = state.medicalHistory,
-                    lifestyleHistory = LifestyleHistory(
-                        alcohol = state.alcohol,
-                        tobacco = state.tobacco,
-                        drugs = state.drugs
-                    )
-                )
-            )
-
-            uploadReportUseCase(state.reportFileName)
-            uploadDiagnosticUseCase(state.diagnosticFileName)
-            shareDataUseCase()
-            _uiState.update {
-                it.copy(
-                    uniqueId = registration.uniqueId,
-                    statusMessage = "Saved and shared with doctor + pharmacist. ID: ${registration.uniqueId}"
-                )
-            }
         }
     }
 
-    fun downloadReport() {
+    fun setFullName(v: String) { _fullName.value = v }
+    fun setGuardianName(v: String) { _guardianName.value = v }
+    fun setGender(v: Gender) { _gender.value = v }
+    fun setAge(v: String) { _age.value = v }
+    fun setDob(v: String) { _dob.value = v }
+    fun setMobile(v: String) { _mobile.value = v }
+    fun setAadhaar(v: String) { _aadhaar.value = v }
+    fun setRegVillage(v: String) { _regVillage.value = v }
+    fun setRegDistrict(v: String) {
+        _regDistrict.value = v
         viewModelScope.launch {
-            val message = downloadReportUseCase(_uiState.value.reportFileName)
-            _uiState.update { it.copy(statusMessage = message) }
+            _regVillages.value = getVillagesUseCase(v)
+            _regVillage.value = ""
         }
+    }
+    fun setRegState(v: String) { _regState.value = v }
+    fun setWeight(v: String) { _weight.value = v }
+    fun setTemperature(v: String) { _temperature.value = v }
+    fun setTempUnit(v: String) { _tempUnit.value = v }
+    fun setBpSystolic(v: String) { _bpSystolic.value = v }
+    fun setBpDiastolic(v: String) { _bpDiastolic.value = v }
+    fun setBloodSugar(v: String) { _bloodSugar.value = v }
+    fun setHemoglobin(v: String) { _hemoglobin.value = v }
+    fun setSpo2(v: String) { _spo2.value = v }
+    fun setPulseRate(v: String) { _pulseRate.value = v }
+    fun setPrimaryComplaint(v: String) { _primaryComplaint.value = v }
+    fun toggleSymptom(symptom: String) {
+        _selectedSymptoms.value = _selectedSymptoms.value.toMutableSet().apply {
+            if (contains(symptom)) remove(symptom) else add(symptom)
+        }
+    }
+    fun toggleCondition(condition: String) {
+        _selectedConditions.value = _selectedConditions.value.toMutableSet().apply {
+            if (contains(condition)) remove(condition) else add(condition)
+        }
+    }
+    fun setAlcohol(v: Boolean) { _alcohol.value = v }
+    fun setTobacco(v: Boolean) { _tobacco.value = v }
+    fun setDrugs(v: Boolean) { _drugs.value = v }
+
+    fun addMockDocument(type: String) {
+        val name = if (type == "report") "Report_${_uploadedFiles.value.size + 1}.pdf" else "Xray_${_uploadedFiles.value.size + 1}.jpg"
+        _uploadedFiles.value = _uploadedFiles.value + DocumentFile(name, type)
+    }
+
+    fun removeDocument(doc: DocumentFile) {
+        _uploadedFiles.value = _uploadedFiles.value - doc
+    }
+
+    fun submitRegistration() {
+        viewModelScope.launch {
+            _isLoading.value = true
+            val patient = Patient(
+                id = "",
+                fullName = _fullName.value,
+                guardianName = _guardianName.value,
+                gender = _gender.value,
+                age = _age.value.toIntOrNull() ?: 0,
+                dob = _dob.value,
+                mobile = _mobile.value,
+                aadhaar = _aadhaar.value,
+                address = Address(_regVillage.value, _regDistrict.value, _regState.value),
+                vitals = Vitals(
+                    weight = _weight.value.toFloatOrNull(),
+                    temperature = _temperature.value.toFloatOrNull(),
+                    temperatureUnit = _tempUnit.value,
+                    bpSystolic = _bpSystolic.value.toIntOrNull(),
+                    bpDiastolic = _bpDiastolic.value.toIntOrNull(),
+                    bloodSugar = _bloodSugar.value.toFloatOrNull(),
+                    hemoglobin = _hemoglobin.value.toFloatOrNull(),
+                    spo2 = _spo2.value.toIntOrNull(),
+                    pulseRate = _pulseRate.value.toIntOrNull()
+                ),
+                medicalHistory = MedicalHistory(
+                    primaryComplaint = _primaryComplaint.value,
+                    symptoms = _selectedSymptoms.value.toList(),
+                    knownConditions = _selectedConditions.value.toList(),
+                    lifestyle = LifestyleHistory(_alcohol.value, _tobacco.value, _drugs.value)
+                ),
+                documents = _uploadedFiles.value,
+                registeredBy = _spokeName.value.ifEmpty { "Health Worker" }
+            )
+            val registered = registerPatientUseCase(patient)
+            _registeredPatient.value = registered
+            _isLoading.value = false
+        }
+    }
+
+    fun resetRegistration() {
+        _fullName.value = ""
+        _guardianName.value = ""
+        _gender.value = Gender.MALE
+        _age.value = ""
+        _dob.value = ""
+        _mobile.value = ""
+        _aadhaar.value = ""
+        _regVillage.value = ""
+        _regDistrict.value = ""
+        _regState.value = ""
+        _weight.value = ""
+        _temperature.value = ""
+        _bpSystolic.value = ""
+        _bpDiastolic.value = ""
+        _bloodSugar.value = ""
+        _hemoglobin.value = ""
+        _spo2.value = ""
+        _pulseRate.value = ""
+        _primaryComplaint.value = ""
+        _selectedSymptoms.value = emptySet()
+        _selectedConditions.value = emptySet()
+        _alcohol.value = false
+        _tobacco.value = false
+        _drugs.value = false
+        _uploadedFiles.value = emptyList()
+        _registeredPatient.value = null
     }
 }
 
+// ============ Session Setup Screen ============
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HealthWorkerModuleScreen(
+fun HWSessionSetupScreen(
     viewModel: HealthWorkerModuleViewModel,
+    onSessionStarted: () -> Unit,
     onBack: () -> Unit
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val spokeName by viewModel.spokeName.collectAsState()
+    val selectedDistrict by viewModel.selectedDistrict.collectAsState()
+    val selectedVillage by viewModel.selectedVillage.collectAsState()
+    val districts by viewModel.districts.collectAsState()
+    val villages by viewModel.villages.collectAsState()
+    val currentDateTime by viewModel.currentDateTime.collectAsState()
 
-    LaunchedEffect(Unit) {
-        viewModel.bootstrap()
-    }
-
-    ResponsiveScreen(title = "Health Worker Module", onBack = onBack) {
+    Scaffold(
+        topBar = { AppTopBar(title = stringResource(R.string.session_setup), onBack = onBack) }
+    ) { padding ->
         Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+                .fillMaxSize()
+                .padding(padding)
+                .verticalScroll(rememberScrollState())
+                .padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            SectionTitle("Pre-Consultation (Before Login)")
-            OutlinedTextField(
-                value = uiState.spokeName,
-                onValueChange = { viewModel.updateField { state -> state.copy(spokeName = it) } },
-                modifier = Modifier.fillMaxWidth(),
-                label = { Text("Spoke Name") }
+            Icon(
+                Icons.Default.LocationOn,
+                contentDescription = null,
+                tint = HealthWorkerColor,
+                modifier = Modifier.size(48.dp).align(Alignment.CenterHorizontally)
             )
-            Text("District (mapped list)")
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                uiState.districts.forEach { district ->
-                    Button(onClick = { viewModel.onDistrictSelected(district) }) { Text(district) }
-                }
-            }
-            Text("Village (mapped list)")
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                uiState.villages.forEach { village ->
-                    Button(onClick = { viewModel.onVillageSelected(village) }) { Text(village) }
-                }
-            }
-            Text("Auto-captured local date/time: ${uiState.localDateTime}")
 
-            SectionTitle("New Patient Registration")
-            TextFieldLine("Full Name", uiState.fullName) { value ->
-                viewModel.updateField { it.copy(fullName = value) }
-            }
-            TextFieldLine("Spouse/Father's Name", uiState.spouseOrFatherName) { value ->
-                viewModel.updateField { it.copy(spouseOrFatherName = value) }
-            }
-            TextFieldLine("Gender", uiState.gender) { value ->
-                viewModel.updateField { it.copy(gender = value) }
-            }
-            TextFieldLine("Age", uiState.age) { value ->
-                viewModel.updateField { it.copy(age = value) }
-            }
-            TextFieldLine("DOB (YYYY-MM-DD)", uiState.dob) { value ->
-                viewModel.updateField { it.copy(dob = value) }
-            }
-            TextFieldLine("State", uiState.state) { value ->
-                viewModel.updateField { it.copy(state = value) }
-            }
-            TextFieldLine("Mobile Number", uiState.mobile) { value ->
-                viewModel.updateField { it.copy(mobile = value) }
-            }
-            TextFieldLine("Aadhaar Number", uiState.aadhaar) { value ->
-                viewModel.updateField { it.copy(aadhaar = value) }
-            }
+            LargeTextField(
+                value = spokeName,
+                onValueChange = viewModel::setSpokeName,
+                label = stringResource(R.string.spoke_name)
+            )
 
-            SectionTitle("Basic Vitals + History")
-            TextFieldLine("Weight (kg)", uiState.weight) { value ->
-                viewModel.updateField { it.copy(weight = value) }
-            }
-            TextFieldLine("Temperature (C)", uiState.temperature) { value ->
-                viewModel.updateField { it.copy(temperature = value) }
-            }
-            TextFieldLine("Blood Pressure", uiState.bloodPressure) { value ->
-                viewModel.updateField { it.copy(bloodPressure = value) }
-            }
-            TextFieldLine("Blood Sugar", uiState.bloodSugar) { value ->
-                viewModel.updateField { it.copy(bloodSugar = value) }
-            }
-            TextFieldLine("Hemoglobin", uiState.hemoglobin) { value ->
-                viewModel.updateField { it.copy(hemoglobin = value) }
-            }
-            TextFieldLine("Other vitals", uiState.otherVitals) { value ->
-                viewModel.updateField { it.copy(otherVitals = value) }
-            }
-            TextFieldLine("Primary complaint", uiState.primaryComplaint) { value ->
-                viewModel.updateField { it.copy(primaryComplaint = value) }
-            }
-            TextFieldLine("Basic symptoms", uiState.basicSymptoms) { value ->
-                viewModel.updateField { it.copy(basicSymptoms = value) }
-            }
-            TextFieldLine("Medical history", uiState.medicalHistory) { value ->
-                viewModel.updateField { it.copy(medicalHistory = value) }
-            }
+            DropdownField(
+                value = selectedDistrict,
+                onValueChange = viewModel::setDistrict,
+                label = stringResource(R.string.district),
+                options = districts
+            )
 
-            LifestyleSwitch("Alcohol", uiState.alcohol) { enabled ->
-                viewModel.updateField { it.copy(alcohol = enabled) }
-            }
-            LifestyleSwitch("Tobacco", uiState.tobacco) { enabled ->
-                viewModel.updateField { it.copy(tobacco = enabled) }
-            }
-            LifestyleSwitch("Drugs", uiState.drugs) { enabled ->
-                viewModel.updateField { it.copy(drugs = enabled) }
-            }
+            DropdownField(
+                value = selectedVillage,
+                onValueChange = viewModel::setVillage,
+                label = stringResource(R.string.village),
+                options = villages
+            )
 
-            SectionTitle("Additional Capabilities")
-            TextFieldLine("Report filename", uiState.reportFileName) { value ->
-                viewModel.updateField { it.copy(reportFileName = value) }
-            }
-            TextFieldLine("X-ray/Diagnostic filename", uiState.diagnosticFileName) { value ->
-                viewModel.updateField { it.copy(diagnosticFileName = value) }
-            }
+            LargeTextField(
+                value = currentDateTime,
+                onValueChange = {},
+                label = stringResource(R.string.date_time),
+                readOnly = true,
+                trailingIcon = { Icon(Icons.Default.CalendarToday, contentDescription = null) }
+            )
 
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(onClick = viewModel::saveAndShare) {
-                    Text("Save + Share")
-                }
-                Button(onClick = viewModel::downloadReport) {
-                    Text("Download Report")
+            Spacer(modifier = Modifier.height(16.dp))
+
+            LargeButton(
+                text = stringResource(R.string.start_session),
+                onClick = {
+                    viewModel.saveSession()
+                    onSessionStarted()
+                },
+                enabled = spokeName.isNotBlank() && selectedDistrict.isNotBlank() && selectedVillage.isNotBlank(),
+                icon = Icons.Default.PlayArrow,
+                color = HealthWorkerColor
+            )
+        }
+    }
+}
+
+// ============ Health Worker Dashboard ============
+
+@Composable
+fun HWDashboardScreen(
+    viewModel: HealthWorkerModuleViewModel,
+    onNewPatient: () -> Unit,
+    onPatientClick: (String) -> Unit,
+    onBack: () -> Unit
+) {
+    val recentPatients by viewModel.recentPatients.collectAsState()
+    val syncStatus by viewModel.syncStatus.collectAsState()
+
+    LaunchedEffect(Unit) { viewModel.refreshDashboard() }
+
+    Scaffold(
+        topBar = { AppTopBar(title = stringResource(R.string.dashboard), onBack = onBack) }
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(16.dp)
+        ) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = PrimaryTealVeryLight)
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(Icons.Default.CloudDone, contentDescription = null, tint = PrimaryTealDark)
+                    Text(
+                        "${stringResource(R.string.sync_status)}: $syncStatus",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = PrimaryTealDark
+                    )
+                    Spacer(modifier = Modifier.weight(1f))
+                    Text(
+                        "${stringResource(R.string.total_today)}: ${recentPatients.size}",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = PrimaryTealDark
+                    )
                 }
             }
 
-            if (uiState.uniqueId.isNotBlank()) {
-                Text("Unique ID: ${uiState.uniqueId}", color = MaterialTheme.colorScheme.primary)
-            }
-            if (uiState.statusMessage.isNotBlank()) {
-                Text(uiState.statusMessage)
+            Spacer(modifier = Modifier.height(16.dp))
+
+            LargeButton(
+                text = stringResource(R.string.new_patient),
+                onClick = onNewPatient,
+                icon = Icons.Default.PersonAdd,
+                color = HealthWorkerColor
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            Text(stringResource(R.string.recent_patients), style = MaterialTheme.typography.titleMedium)
+            Spacer(modifier = Modifier.height(8.dp))
+
+            if (recentPatients.isEmpty()) {
+                Box(
+                    modifier = Modifier.fillMaxWidth().padding(32.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("No patients registered yet.", style = MaterialTheme.typography.bodyLarge, color = TextSecondary)
+                }
+            } else {
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    items(recentPatients) { patient ->
+                        Card(
+                            onClick = { onPatientClick(patient.id) },
+                            modifier = Modifier.fillMaxWidth(),
+                            elevation = CardDefaults.cardElevation(2.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(patient.fullName, style = MaterialTheme.typography.titleSmall)
+                                    Text("${patient.id} • Age: ${patient.age}", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+                                    Text(patient.registeredAt, style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+                                }
+                                StatusBadge(status = patient.status)
+                            }
+                        }
+                    }
+                }
             }
         }
     }
 }
 
+// ============ Step 1: Personal Info ============
+
 @Composable
-private fun SectionTitle(title: String) {
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Text(
-            text = title,
-            modifier = Modifier.padding(12.dp),
-            style = MaterialTheme.typography.titleMedium
-        )
+fun HWRegStep1Screen(
+    viewModel: HealthWorkerModuleViewModel,
+    onNext: () -> Unit,
+    onBack: () -> Unit
+) {
+    val fullName by viewModel.fullName.collectAsState()
+    val guardianName by viewModel.guardianName.collectAsState()
+    val gender by viewModel.gender.collectAsState()
+    val age by viewModel.age.collectAsState()
+    val dob by viewModel.dob.collectAsState()
+    val mobile by viewModel.mobile.collectAsState()
+    val aadhaar by viewModel.aadhaar.collectAsState()
+    val stepLabels = listOf("Personal Info", "Address", "Vitals", "Medical History", "Documents", "Review")
+
+    Scaffold(
+        topBar = { AppTopBar(title = stringResource(R.string.step_personal_info), onBack = onBack) }
+    ) { padding ->
+        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+            StepProgressIndicator(1, 6, stepLabels, Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
+            Column(
+                modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(24.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                LargeTextField(value = fullName, onValueChange = viewModel::setFullName, label = stringResource(R.string.full_name))
+                LargeTextField(value = guardianName, onValueChange = viewModel::setGuardianName, label = stringResource(R.string.guardian_name))
+                SectionHeader(stringResource(R.string.gender))
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Gender.entries.forEach { g ->
+                        FilterChip(
+                            selected = gender == g,
+                            onClick = { viewModel.setGender(g) },
+                            label = { Text(when (g) { Gender.MALE -> stringResource(R.string.male); Gender.FEMALE -> stringResource(R.string.female); Gender.OTHER -> stringResource(R.string.other) }, style = MaterialTheme.typography.labelLarge) },
+                            modifier = Modifier.height(44.dp)
+                        )
+                    }
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    LargeTextField(value = age, onValueChange = viewModel::setAge, label = stringResource(R.string.age), keyboardType = KeyboardType.Number, modifier = Modifier.weight(1f))
+                    LargeTextField(value = dob, onValueChange = viewModel::setDob, label = stringResource(R.string.date_of_birth), modifier = Modifier.weight(1.5f), trailingIcon = { Icon(Icons.Default.CalendarToday, null) })
+                }
+                LargeTextField(value = mobile, onValueChange = viewModel::setMobile, label = stringResource(R.string.mobile_number), keyboardType = KeyboardType.Phone)
+                LargeTextField(value = aadhaar, onValueChange = viewModel::setAadhaar, label = stringResource(R.string.aadhaar_number), keyboardType = KeyboardType.Number)
+            }
+            Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedButton(onClick = onBack, modifier = Modifier.weight(1f).height(52.dp)) { Text(stringResource(R.string.back)) }
+                Button(onClick = onNext, modifier = Modifier.weight(1f).height(52.dp), enabled = fullName.isNotBlank()) { Text(stringResource(R.string.next)) }
+            }
+        }
     }
 }
 
-@Composable
-private fun TextFieldLine(label: String, value: String, onChange: (String) -> Unit) {
-    OutlinedTextField(
-        value = value,
-        onValueChange = onChange,
-        modifier = Modifier.fillMaxWidth(),
-        label = { Text(label) }
-    )
-}
+// ============ Step 2: Address ============
 
 @Composable
-private fun LifestyleSwitch(label: String, value: Boolean, onChange: (Boolean) -> Unit) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(label)
-        Switch(checked = value, onCheckedChange = onChange)
+fun HWRegStep2Screen(viewModel: HealthWorkerModuleViewModel, onNext: () -> Unit, onBack: () -> Unit) {
+    val regVillage by viewModel.regVillage.collectAsState()
+    val regDistrict by viewModel.regDistrict.collectAsState()
+    val regState by viewModel.regState.collectAsState()
+    val districts by viewModel.districts.collectAsState()
+    val regVillages by viewModel.regVillages.collectAsState()
+    val states by viewModel.states.collectAsState()
+    val stepLabels = listOf("Personal Info", "Address", "Vitals", "Medical History", "Documents", "Review")
+
+    Scaffold(topBar = { AppTopBar(title = stringResource(R.string.step_address), onBack = onBack) }) { padding ->
+        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+            StepProgressIndicator(2, 6, stepLabels, Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
+            Column(modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                DropdownField(value = regState, onValueChange = viewModel::setRegState, label = stringResource(R.string.state), options = states)
+                DropdownField(value = regDistrict, onValueChange = viewModel::setRegDistrict, label = stringResource(R.string.district), options = districts)
+                DropdownField(value = regVillage, onValueChange = viewModel::setRegVillage, label = stringResource(R.string.village), options = regVillages)
+            }
+            Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedButton(onClick = onBack, modifier = Modifier.weight(1f).height(52.dp)) { Text(stringResource(R.string.back)) }
+                Button(onClick = onNext, modifier = Modifier.weight(1f).height(52.dp)) { Text(stringResource(R.string.next)) }
+            }
+        }
     }
 }
 
+// ============ Step 3: Vitals ============
+
+@Composable
+fun HWRegStep3Screen(viewModel: HealthWorkerModuleViewModel, onNext: () -> Unit, onBack: () -> Unit) {
+    val weight by viewModel.weight.collectAsState()
+    val temperature by viewModel.temperature.collectAsState()
+    val tempUnit by viewModel.tempUnit.collectAsState()
+    val bpSystolic by viewModel.bpSystolic.collectAsState()
+    val bpDiastolic by viewModel.bpDiastolic.collectAsState()
+    val bloodSugar by viewModel.bloodSugar.collectAsState()
+    val hemoglobin by viewModel.hemoglobin.collectAsState()
+    val spo2 by viewModel.spo2.collectAsState()
+    val pulseRate by viewModel.pulseRate.collectAsState()
+    val stepLabels = listOf("Personal Info", "Address", "Vitals", "Medical History", "Documents", "Review")
+
+    Scaffold(topBar = { AppTopBar(title = stringResource(R.string.step_vitals), onBack = onBack) }) { padding ->
+        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+            StepProgressIndicator(3, 6, stepLabels, Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
+            Column(modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(24.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                LargeTextField(value = weight, onValueChange = viewModel::setWeight, label = stringResource(R.string.weight_kg), keyboardType = KeyboardType.Decimal)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    LargeTextField(value = temperature, onValueChange = viewModel::setTemperature, label = "${stringResource(R.string.temperature)} (°$tempUnit)", keyboardType = KeyboardType.Decimal, modifier = Modifier.weight(1f))
+                    FilterChip(selected = tempUnit == "F", onClick = { viewModel.setTempUnit("F") }, label = { Text("°F") }, modifier = Modifier.height(44.dp))
+                    FilterChip(selected = tempUnit == "C", onClick = { viewModel.setTempUnit("C") }, label = { Text("°C") }, modifier = Modifier.height(44.dp))
+                }
+                SectionHeader(stringResource(R.string.blood_pressure))
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    LargeTextField(value = bpSystolic, onValueChange = viewModel::setBpSystolic, label = stringResource(R.string.systolic), keyboardType = KeyboardType.Number, modifier = Modifier.weight(1f))
+                    LargeTextField(value = bpDiastolic, onValueChange = viewModel::setBpDiastolic, label = stringResource(R.string.diastolic), keyboardType = KeyboardType.Number, modifier = Modifier.weight(1f))
+                }
+                LargeTextField(value = bloodSugar, onValueChange = viewModel::setBloodSugar, label = stringResource(R.string.blood_sugar), keyboardType = KeyboardType.Decimal)
+                LargeTextField(value = hemoglobin, onValueChange = viewModel::setHemoglobin, label = stringResource(R.string.hemoglobin), keyboardType = KeyboardType.Decimal)
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    LargeTextField(value = spo2, onValueChange = viewModel::setSpo2, label = stringResource(R.string.spo2), keyboardType = KeyboardType.Number, modifier = Modifier.weight(1f))
+                    LargeTextField(value = pulseRate, onValueChange = viewModel::setPulseRate, label = stringResource(R.string.pulse_rate), keyboardType = KeyboardType.Number, modifier = Modifier.weight(1f))
+                }
+            }
+            Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedButton(onClick = onBack, modifier = Modifier.weight(1f).height(52.dp)) { Text(stringResource(R.string.back)) }
+                Button(onClick = onNext, modifier = Modifier.weight(1f).height(52.dp)) { Text(stringResource(R.string.next)) }
+            }
+        }
+    }
+}
+
+// ============ Step 4: Medical History ============
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun HWRegStep4Screen(viewModel: HealthWorkerModuleViewModel, onNext: () -> Unit, onBack: () -> Unit) {
+    val primaryComplaint by viewModel.primaryComplaint.collectAsState()
+    val selectedSymptoms by viewModel.selectedSymptoms.collectAsState()
+    val selectedConditions by viewModel.selectedConditions.collectAsState()
+    val alcohol by viewModel.alcohol.collectAsState()
+    val tobacco by viewModel.tobacco.collectAsState()
+    val drugs by viewModel.drugs.collectAsState()
+    val stepLabels = listOf("Personal Info", "Address", "Vitals", "Medical History", "Documents", "Review")
+
+    Scaffold(topBar = { AppTopBar(title = stringResource(R.string.step_medical_history), onBack = onBack) }) { padding ->
+        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+            StepProgressIndicator(4, 6, stepLabels, Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
+            Column(modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                LargeTextField(value = primaryComplaint, onValueChange = viewModel::setPrimaryComplaint, label = stringResource(R.string.primary_complaint), singleLine = false, minLines = 3)
+                SectionHeader(stringResource(R.string.symptoms))
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    viewModel.symptoms.forEach { symptom -> SelectableChip(text = symptom, selected = selectedSymptoms.contains(symptom), onClick = { viewModel.toggleSymptom(symptom) }) }
+                }
+                SectionHeader(stringResource(R.string.known_conditions))
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    viewModel.conditions.forEach { condition -> SelectableChip(text = condition, selected = selectedConditions.contains(condition), onClick = { viewModel.toggleCondition(condition) }) }
+                }
+                SectionHeader(stringResource(R.string.lifestyle_history))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    SelectableChip(text = stringResource(R.string.alcohol), selected = alcohol, onClick = { viewModel.setAlcohol(!alcohol) })
+                    SelectableChip(text = stringResource(R.string.tobacco), selected = tobacco, onClick = { viewModel.setTobacco(!tobacco) })
+                    SelectableChip(text = stringResource(R.string.drugs), selected = drugs, onClick = { viewModel.setDrugs(!drugs) })
+                }
+            }
+            Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedButton(onClick = onBack, modifier = Modifier.weight(1f).height(52.dp)) { Text(stringResource(R.string.back)) }
+                Button(onClick = onNext, modifier = Modifier.weight(1f).height(52.dp)) { Text(stringResource(R.string.next)) }
+            }
+        }
+    }
+}
+
+// ============ Step 5: Documents ============
+
+@Composable
+fun HWRegStep5Screen(viewModel: HealthWorkerModuleViewModel, onNext: () -> Unit, onBack: () -> Unit) {
+    val uploadedFiles by viewModel.uploadedFiles.collectAsState()
+    val stepLabels = listOf("Personal Info", "Address", "Vitals", "Medical History", "Documents", "Review")
+
+    Scaffold(topBar = { AppTopBar(title = stringResource(R.string.step_documents), onBack = onBack) }) { padding ->
+        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+            StepProgressIndicator(5, 6, stepLabels, Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
+            Column(modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                SectionHeader(stringResource(R.string.upload_reports))
+                OutlinedButton(onClick = { viewModel.addMockDocument("report") }, modifier = Modifier.fillMaxWidth().height(52.dp)) {
+                    Icon(Icons.Default.UploadFile, contentDescription = null); Spacer(modifier = Modifier.width(8.dp)); Text(stringResource(R.string.choose_file))
+                }
+                SectionHeader(stringResource(R.string.upload_diagnostics))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(onClick = { viewModel.addMockDocument("diagnostic") }, modifier = Modifier.weight(1f).height(52.dp)) { Icon(Icons.Default.Image, contentDescription = null); Spacer(modifier = Modifier.width(4.dp)); Text(stringResource(R.string.choose_file)) }
+                    OutlinedButton(onClick = { viewModel.addMockDocument("diagnostic") }, modifier = Modifier.weight(1f).height(52.dp)) { Icon(Icons.Default.CameraAlt, contentDescription = null); Spacer(modifier = Modifier.width(4.dp)); Text(stringResource(R.string.take_photo)) }
+                }
+                if (uploadedFiles.isNotEmpty()) {
+                    SectionHeader("Uploaded Files (${uploadedFiles.size})")
+                    uploadedFiles.forEach { doc ->
+                        Card(modifier = Modifier.fillMaxWidth(), elevation = CardDefaults.cardElevation(1.dp)) {
+                            Row(modifier = Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Icon(if (doc.type == "report") Icons.Default.Description else Icons.Default.Image, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text(doc.name, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+                                IconButton(onClick = { viewModel.removeDocument(doc) }) { Icon(Icons.Default.Close, contentDescription = stringResource(R.string.remove), tint = AccentRed) }
+                            }
+                        }
+                    }
+                }
+            }
+            Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedButton(onClick = onBack, modifier = Modifier.weight(1f).height(52.dp)) { Text(stringResource(R.string.back)) }
+                Button(onClick = onNext, modifier = Modifier.weight(1f).height(52.dp)) { Text(stringResource(R.string.next)) }
+            }
+        }
+    }
+}
+
+// ============ Step 6: Review & Submit ============
+
+@Composable
+fun HWRegStep6Screen(viewModel: HealthWorkerModuleViewModel, onSubmitSuccess: () -> Unit, onBack: () -> Unit) {
+    val fullName by viewModel.fullName.collectAsState()
+    val guardianName by viewModel.guardianName.collectAsState()
+    val gender by viewModel.gender.collectAsState()
+    val age by viewModel.age.collectAsState()
+    val dob by viewModel.dob.collectAsState()
+    val mobile by viewModel.mobile.collectAsState()
+    val aadhaar by viewModel.aadhaar.collectAsState()
+    val regVillage by viewModel.regVillage.collectAsState()
+    val regDistrict by viewModel.regDistrict.collectAsState()
+    val regState by viewModel.regState.collectAsState()
+    val weight by viewModel.weight.collectAsState()
+    val temperature by viewModel.temperature.collectAsState()
+    val bpSystolic by viewModel.bpSystolic.collectAsState()
+    val bpDiastolic by viewModel.bpDiastolic.collectAsState()
+    val bloodSugar by viewModel.bloodSugar.collectAsState()
+    val hemoglobin by viewModel.hemoglobin.collectAsState()
+    val spo2 by viewModel.spo2.collectAsState()
+    val pulseRate by viewModel.pulseRate.collectAsState()
+    val primaryComplaint by viewModel.primaryComplaint.collectAsState()
+    val selectedSymptoms by viewModel.selectedSymptoms.collectAsState()
+    val selectedConditions by viewModel.selectedConditions.collectAsState()
+    val uploadedFiles by viewModel.uploadedFiles.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val registeredPatient by viewModel.registeredPatient.collectAsState()
+    val stepLabels = listOf("Personal Info", "Address", "Vitals", "Medical History", "Documents", "Review")
+
+    Scaffold(topBar = { AppTopBar(title = stringResource(R.string.step_review), onBack = onBack) }) { padding ->
+        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+            if (registeredPatient != null) {
+                Column(
+                    modifier = Modifier.fillMaxSize().padding(32.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Icon(Icons.Default.CheckCircle, contentDescription = null, tint = StatusDone, modifier = Modifier.size(80.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(stringResource(R.string.registration_success), style = MaterialTheme.typography.headlineMedium, color = StatusDone)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = PrimaryTealVeryLight)) {
+                        Column(modifier = Modifier.padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(stringResource(R.string.patient_id), style = MaterialTheme.typography.labelMedium, color = TextSecondary)
+                            Text(registeredPatient!!.id, style = MaterialTheme.typography.headlineLarge, color = PrimaryTealDark)
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        OutlinedButton(onClick = { }) { Icon(Icons.Default.Share, contentDescription = null); Spacer(modifier = Modifier.width(4.dp)); Text(stringResource(R.string.share_id)) }
+                        OutlinedButton(onClick = { }) { Icon(Icons.Default.ContentCopy, contentDescription = null); Spacer(modifier = Modifier.width(4.dp)); Text(stringResource(R.string.copy_id)) }
+                    }
+                    Spacer(modifier = Modifier.height(32.dp))
+                    LargeButton(text = stringResource(R.string.done), onClick = { viewModel.resetRegistration(); viewModel.refreshDashboard(); onSubmitSuccess() }, color = HealthWorkerColor)
+                }
+            } else {
+                StepProgressIndicator(6, 6, stepLabels, Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
+                Column(modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(24.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    SectionHeader("Personal Information")
+                    PatientSummaryCard("Name", fullName)
+                    PatientSummaryCard("Guardian", guardianName)
+                    PatientSummaryCard("Gender", gender.name)
+                    PatientSummaryCard("Age", age)
+                    PatientSummaryCard("DOB", dob.ifEmpty { "Not provided" })
+                    PatientSummaryCard("Mobile", mobile)
+                    PatientSummaryCard("Aadhaar", aadhaar.ifEmpty { "Not provided" })
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                    SectionHeader("Address")
+                    PatientSummaryCard("Village", regVillage)
+                    PatientSummaryCard("District", regDistrict)
+                    PatientSummaryCard("State", regState)
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                    SectionHeader("Vitals")
+                    PatientSummaryCard("Weight", if (weight.isNotEmpty()) "$weight kg" else "—")
+                    PatientSummaryCard("Temperature", if (temperature.isNotEmpty()) "$temperature°" else "—")
+                    PatientSummaryCard("BP", if (bpSystolic.isNotEmpty()) "$bpSystolic/$bpDiastolic mmHg" else "—")
+                    PatientSummaryCard("Blood Sugar", if (bloodSugar.isNotEmpty()) "$bloodSugar mg/dL" else "—")
+                    PatientSummaryCard("Hemoglobin", if (hemoglobin.isNotEmpty()) "$hemoglobin g/dL" else "—")
+                    PatientSummaryCard("SpO2", if (spo2.isNotEmpty()) "$spo2%" else "—")
+                    PatientSummaryCard("Pulse Rate", if (pulseRate.isNotEmpty()) "$pulseRate bpm" else "—")
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                    SectionHeader("Medical History")
+                    PatientSummaryCard("Complaint", primaryComplaint.ifEmpty { "—" })
+                    PatientSummaryCard("Symptoms", selectedSymptoms.joinToString(", ").ifEmpty { "—" })
+                    PatientSummaryCard("Conditions", selectedConditions.joinToString(", ").ifEmpty { "—" })
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                    SectionHeader("Documents")
+                    PatientSummaryCard("Files", if (uploadedFiles.isNotEmpty()) "${uploadedFiles.size} file(s)" else "None")
+                }
+                Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    OutlinedButton(onClick = onBack, modifier = Modifier.weight(1f).height(52.dp)) { Text(stringResource(R.string.back)) }
+                    LargeButton(text = stringResource(R.string.submit), onClick = { viewModel.submitRegistration() }, isLoading = isLoading, color = HealthWorkerColor, icon = Icons.Default.Send, modifier = Modifier.weight(1f))
+                }
+            }
+        }
+    }
+}
+
+// ============ Patient Detail Screen ============
+
+@Composable
+fun HWPatientDetailScreen(viewModel: HealthWorkerModuleViewModel, patientId: String, onBack: () -> Unit) {
+    val patients by viewModel.recentPatients.collectAsState()
+    val patient = patients.find { it.id == patientId }
+
+    Scaffold(topBar = { AppTopBar(title = stringResource(R.string.patient_details), onBack = onBack) }) { padding ->
+        if (patient == null) {
+            Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) { Text("Patient not found") }
+        } else {
+            Column(modifier = Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(24.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = PrimaryTealVeryLight)) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(patient.fullName, style = MaterialTheme.typography.headlineMedium, color = PrimaryTealDark)
+                        Text("ID: ${patient.id}", style = MaterialTheme.typography.bodyMedium)
+                        Spacer(modifier = Modifier.height(4.dp))
+                        StatusBadge(patient.status)
+                    }
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+                SectionHeader("Personal Info")
+                PatientSummaryCard("Age", "${patient.age}")
+                PatientSummaryCard("Gender", patient.gender.name)
+                PatientSummaryCard("Mobile", patient.mobile)
+                PatientSummaryCard("Guardian", patient.guardianName)
+                SectionHeader("Address")
+                PatientSummaryCard("Village", patient.address.village)
+                PatientSummaryCard("District", patient.address.district)
+                SectionHeader("Vitals")
+                patient.vitals.let { v ->
+                    PatientSummaryCard("Weight", "${v.weight ?: "—"} kg")
+                    PatientSummaryCard("Temperature", "${v.temperature ?: "—"}°${v.temperatureUnit}")
+                    PatientSummaryCard("BP", "${v.bpSystolic ?: "—"}/${v.bpDiastolic ?: "—"} mmHg")
+                    PatientSummaryCard("SpO2", "${v.spo2 ?: "—"}%")
+                    PatientSummaryCard("Pulse", "${v.pulseRate ?: "—"} bpm")
+                }
+                SectionHeader("Chief Complaint")
+                Text(patient.medicalHistory.primaryComplaint.ifEmpty { "—" }, style = MaterialTheme.typography.bodyLarge)
+                PatientSummaryCard("Registered", patient.registeredAt)
+                PatientSummaryCard("By", patient.registeredBy)
+            }
+        }
+    }
+}
