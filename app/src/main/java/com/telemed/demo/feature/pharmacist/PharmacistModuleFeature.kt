@@ -250,7 +250,7 @@ fun PharmacistQueueScreen(
                     items(queue) { item ->
                         PatientListCard(
                             name = item.patient.fullName,
-                            patientId = item.patient.id,
+                            id = item.patient.id,
                             subtitle = item.time,
                             status = item.status,
                             onClick = {

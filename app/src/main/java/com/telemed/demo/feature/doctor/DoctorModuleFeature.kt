@@ -273,8 +273,8 @@ fun DoctorQueueScreen(
                 moduleColor = DoctorColor,
                 onBack = onBack,
                 stats = listOf(
-                    Pair("Waiting", queue.size.toString()),
-                    Pair("Today", queue.size.toString())
+                    queue.size.toString() to "Waiting",
+                    queue.size.toString() to "Today"
                 )
             )
 
