@@ -41,10 +41,13 @@ fun HeroHeader(
     subtitle: String = "",
     moduleColor: Color = BrandPrimary,
     moduleLabel: String = "",
+    moduleChip: String = "",
     moduleIcon: ImageVector? = null,
     stats: List<Pair<String, String>> = emptyList(),
+    onBack: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
+    val chipLabel = moduleLabel.ifEmpty { moduleChip }
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -67,8 +70,14 @@ fun HeroHeader(
                 .padding(horizontal = 16.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-            // Module chip (top-left)
-            if (moduleLabel.isNotEmpty()) {
+            // Back + Module chip row
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (onBack != null) {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
+                    }
+                }
+            if (chipLabel.isNotEmpty()) {
                 Surface(
                     shape = RoundedCornerShape(20.dp),
                     color = Color.White.copy(alpha = 0.12f),
@@ -83,7 +92,7 @@ fun HeroHeader(
                             Icon(moduleIcon, contentDescription = null, tint = Color.White, modifier = Modifier.size(14.dp))
                         }
                         Text(
-                            moduleLabel.uppercase(),
+                            chipLabel.uppercase(),
                             style = MaterialTheme.typography.bodySmall.copy(
                                 fontWeight = FontWeight.SemiBold,
                                 letterSpacing = 0.8.sp
@@ -93,6 +102,7 @@ fun HeroHeader(
                     }
                 }
             }
+            } // end Row
 
             // Title
             Column {
@@ -579,8 +589,8 @@ fun PatientListCard(
 fun VitalCard(
     label: String,
     value: String,
-    unit: String,
     icon: ImageVector,
+    unit: String = "",
     moduleColor: Color = HealthWorkerColor,
     isAbnormal: Boolean = false,
     modifier: Modifier = Modifier
@@ -785,11 +795,24 @@ fun UploadedFileRow(
 
 @Composable
 fun PrescriptionItemCard(
+    medicineName: String,
+    details: String,
+    subDetails: String,
+    isDispensed: Boolean = false,
+    onToggleDispensed: (() -> Unit)? = null,
+    modifier: Modifier = Modifier
+) {
+    PrescriptionItemCard(name = medicineName, dosageLine = "$details\n$subDetails", durationDays = 0, isDispensed = isDispensed, onDispenseToggle = onToggleDispensed, showDuration = false, modifier = modifier)
+}
+
+@Composable
+fun PrescriptionItemCard(
     name: String,
     dosageLine: String,
     durationDays: Int,
     isDispensed: Boolean = false,
     onDispenseToggle: (() -> Unit)? = null,
+    showDuration: Boolean = true,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -824,7 +847,7 @@ fun PrescriptionItemCard(
                 Text(dosageLine, style = MaterialTheme.typography.labelMedium, color = TextMuted)
             }
             // Duration badge
-            Surface(shape = RoundedCornerShape(20.dp), color = StatusAwaitingBg) {
+            if (showDuration && durationDays > 0) Surface(shape = RoundedCornerShape(20.dp), color = StatusAwaitingBg) {
                 Text(
                     "${durationDays}d",
                     style = MaterialTheme.typography.labelSmall,
@@ -844,6 +867,24 @@ fun PrescriptionItemCard(
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // PRESCRIPTION PDF TRIGGER CARD
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+@Composable
+fun PrescriptionReadyCard(modifier: Modifier = Modifier) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = AccentTeal)
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Icon(Icons.Default.Description, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
+            Text("Prescription Ready", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold), color = Color.White)
+        }
+    }
+}
 
 @Composable
 fun PrescriptionReadyCard(
