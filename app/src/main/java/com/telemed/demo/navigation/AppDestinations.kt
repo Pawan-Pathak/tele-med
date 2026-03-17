@@ -5,6 +5,7 @@ sealed class AppDestination(val route: String) {
     data object RoleSelection : AppDestination("role_selection")
 
     // Health Worker flow
+    data object HWLogin : AppDestination("hw_login")
     data object HWSessionSetup : AppDestination("hw_session_setup")
     data object HWDashboard : AppDestination("hw_dashboard")
     data object HWRegistrationStep1 : AppDestination("hw_reg_step1")
@@ -16,6 +17,8 @@ sealed class AppDestination(val route: String) {
     data object HWPatientDetail : AppDestination("hw_patient_detail/{patientId}") {
         fun createRoute(patientId: String) = "hw_patient_detail/$patientId"
     }
+    data object HWConnectDoctor : AppDestination("hw_connect_doctor")
+    data object HWVideoCall : AppDestination("hw_video_call")
 
     // Pharmacist flow
     data object PharmacistLogin : AppDestination("pharmacist_login")

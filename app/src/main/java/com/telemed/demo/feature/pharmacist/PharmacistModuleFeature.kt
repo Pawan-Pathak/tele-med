@@ -30,6 +30,7 @@ import com.telemed.demo.domain.usecase.*
 import com.telemed.demo.ui.components.*
 import com.telemed.demo.ui.responsive.AppTopBar
 import com.telemed.demo.ui.theme.*
+import com.telemed.demo.feature.healthworker.DoctorAvatarImage
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -417,23 +418,13 @@ fun PharmacistVideoCallScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(24.dp)
             ) {
-                // Avatar placeholder
-                Surface(
-                    shape = CircleShape,
-                    color = Color.White.copy(alpha = 0.12f),
+                // Doctor avatar
+                DoctorAvatarImage(
+                    doctorName = "Dr. Priya Sharma",
                     modifier = Modifier
                         .size(120.dp)
                         .then(if (isConnecting) Modifier.scale(pulseScale) else Modifier)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            Icons.Default.Person,
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(60.dp)
-                        )
-                    }
-                }
+                )
 
                 Text(
                     if (isConnecting) stringResource(R.string.connecting_doctor)
@@ -448,7 +439,7 @@ fun PharmacistVideoCallScreen(
                 }
 
                 if (isCallActive) {
-                    // Mock video area
+                    // Mock video area with doctor avatar
                     Surface(
                         modifier = Modifier
                             .fillMaxWidth(0.85f)
@@ -458,9 +449,25 @@ fun PharmacistVideoCallScreen(
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Icon(Icons.Default.Videocam, contentDescription = null, tint = Color.White.copy(alpha = 0.5f), modifier = Modifier.size(48.dp))
+                                DoctorAvatarImage(
+                                    doctorName = "Dr. Priya Sharma",
+                                    modifier = Modifier.size(72.dp)
+                                )
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text("Video Call Active", color = Color.White.copy(alpha = 0.7f), style = MaterialTheme.typography.bodyMedium)
+                            }
+                        }
+
+                        // Self-view mini
+                        Box(modifier = Modifier.fillMaxSize().padding(12.dp), contentAlignment = Alignment.BottomEnd) {
+                            Surface(
+                                modifier = Modifier.size(width = 80.dp, height = 100.dp),
+                                shape = RoundedCornerShape(8.dp),
+                                color = Color.DarkGray
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(Icons.Default.Person, contentDescription = null, tint = Color.White.copy(alpha = 0.5f), modifier = Modifier.size(32.dp))
+                                }
                             }
                         }
                     }

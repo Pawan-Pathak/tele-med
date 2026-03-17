@@ -77,6 +77,14 @@ class SaveDoctorConsultationUseCase(private val repo: DoctorRepository) {
     suspend operator fun invoke(form: DoctorConsultationForm) = repo.saveDoctorConsultation(form)
 }
 
+class FindBestDoctorUseCase(private val repo: DoctorRepository) {
+    suspend operator fun invoke(language: String, district: String) = repo.findBestDoctor(language, district)
+}
+
+class GetAvailableDoctorsByLanguageUseCase(private val repo: DoctorRepository) {
+    suspend operator fun invoke(language: String) = repo.getAvailableDoctorsByLanguage(language)
+}
+
 // Prescription
 class GeneratePrescriptionUseCase(private val repo: PrescriptionRepository) {
     suspend operator fun invoke(patient: Patient, doctor: Doctor, consultation: DoctorConsultationForm) =

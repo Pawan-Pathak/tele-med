@@ -36,6 +36,8 @@ interface ConsultationRepository {
 interface DoctorRepository {
     suspend fun getDoctors(): List<Doctor>
     suspend fun getDoctorsByDistrict(district: String): List<Doctor>
+    suspend fun getAvailableDoctorsByLanguage(language: String): List<Doctor>
+    suspend fun findBestDoctor(language: String, district: String): Doctor?
     suspend fun connectDoctor(doctorId: String): Doctor?
     suspend fun getConnectedDoctor(): Doctor?
     suspend fun saveDoctorConsultation(form: DoctorConsultationForm)
