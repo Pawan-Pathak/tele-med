@@ -35,12 +35,17 @@ class TeleMedMemoryStore {
     )
     val states = listOf("Madhya Pradesh", "Uttar Pradesh", "Rajasthan", "Maharashtra", "Gujarat")
 
-    // Pre-seeded doctors
+    // Pre-seeded doctors with language support
     val doctors = listOf(
-        Doctor("d1", "Dr. Priya Sharma", "MBBS, MD", "General Medicine", "PHC Berasia", "MP-MED-1234", 3, true, "Bhopal"),
-        Doctor("d2", "Dr. Amit Verma", "MBBS, MD, DM", "Cardiology", "CHC Sehore", "MP-MED-2345", 7, true, "Sehore"),
-        Doctor("d3", "Dr. Sunita Patel", "MBBS, DCH", "Pediatrics", "PHC Sanwer", "MP-MED-3456", 5, true, "Indore")
+        Doctor("d1", "Dr. Priya Sharma", "MBBS, MD", "General Medicine", "PHC Berasia", "MP-MED-1234", 3, true, "Bhopal", listOf("Hindi", "English")),
+        Doctor("d2", "Dr. Amit Verma", "MBBS, MD, DM", "Cardiology", "CHC Sehore", "MP-MED-2345", 7, true, "Sehore", listOf("Hindi", "English", "Marathi")),
+        Doctor("d3", "Dr. Sunita Patel", "MBBS, DCH", "Pediatrics", "PHC Sanwer", "MP-MED-3456", 5, true, "Indore", listOf("Hindi", "Gujarati")),
+        Doctor("d4", "Dr. Rajesh Gupta", "MBBS, MS", "General Surgery", "DH Jabalpur", "MP-MED-4567", 4, true, "Jabalpur", listOf("Hindi", "English")),
+        Doctor("d5", "Dr. Meera Joshi", "MBBS, MD", "Obstetrics & Gynaecology", "PHC Gwalior", "MP-MED-5678", 6, false, "Gwalior", listOf("Hindi", "English", "Urdu"))
     )
+
+    // Health worker storage
+    var currentHealthWorker: HealthWorker? = null
 
     // Pre-seeded mock patients
     init {

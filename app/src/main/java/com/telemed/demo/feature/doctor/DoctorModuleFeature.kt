@@ -32,6 +32,7 @@ import com.telemed.demo.domain.usecase.*
 import com.telemed.demo.ui.components.*
 import com.telemed.demo.ui.responsive.AppTopBar
 import com.telemed.demo.ui.theme.*
+import com.telemed.demo.feature.healthworker.DoctorAvatarImage
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -403,6 +404,8 @@ fun DoctorIncomingCallScreen(
     val selectedPatient by viewModel.selectedPatient.collectAsState()
     val patient = selectedPatient
 
+    val doctor by viewModel.currentDoctor.collectAsState()
+
     val infiniteTransition = rememberInfiniteTransition(label = "ring")
     val ringScale by infiniteTransition.animateFloat(
         initialValue = 1f,
@@ -426,14 +429,19 @@ fun DoctorIncomingCallScreen(
         ) {
             Text(stringResource(R.string.incoming_call), style = MaterialTheme.typography.titleMedium, color = Color.White.copy(alpha = 0.7f))
 
-            Surface(
-                shape = CircleShape,
-                color = Color.White.copy(alpha = 0.12f),
-                modifier = Modifier.size(120.dp).scale(ringScale)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(Icons.Default.Person, contentDescription = null, tint = Color.White, modifier = Modifier.size(64.dp))
-                }
+            // Doctor avatar with ring animation
+            Box(modifier = Modifier.size(140.dp), contentAlignment = Alignment.Center) {
+                // Animated ring
+                Surface(
+                    shape = CircleShape,
+                    color = CallAcceptGreen.copy(alpha = 0.2f),
+                    modifier = Modifier.size(140.dp).scale(ringScale)
+                ) {}
+                // Doctor image
+                DoctorAvatarImage(
+                    doctorName = doctor?.name ?: "Doctor",
+                    modifier = Modifier.size(120.dp)
+                )
             }
 
             Text(
@@ -860,13 +868,124 @@ fun DoctorPrescriptionPreviewScreen(
                     }
                 }
 
+                // Share options
+                var showShareOptions by remember { mutableStateOf(false) }
+                var shareConfirmMessage by remember { mutableStateOf("") }
+
+                if (shareConfirmMessage.isNotEmpty()) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(containerColor = StatusDoneBg)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(Icons.Default.CheckCircle, contentDescription = null, tint = StatusDoneText, modifier = Modifier.size(20.dp))
+                            Text(shareConfirmMessage, style = MaterialTheme.typography.bodyMedium, color = StatusDoneText, modifier = Modifier.weight(1f))
+                            IconButton(onClick = { shareConfirmMessage = "" }, modifier = Modifier.size(24.dp)) {
+                                Icon(Icons.Default.Close, contentDescription = "Dismiss", tint = StatusDoneText, modifier = Modifier.size(16.dp))
+                            }
+                        }
+                    }
+                }
+
+                if (showShareOptions) {
+                    // Share options panel
+                    Card(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = BackgroundCard),
+                        elevation = CardDefaults.cardElevation(4.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text("Share Prescription via", style = MaterialTheme.typography.titleSmall, color = TextPrimary)
+                            Spacer(modifier = Modifier.height(4.dp))
+
+                            // WhatsApp
+                            Card(
+                                onClick = {
+                                    showShareOptions = false
+                                    shareConfirmMessage = "Prescription shared via WhatsApp successfully!"
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = CardDefaults.cardColors(containerColor = Color(0xFFE7F5E7))
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(16.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    Surface(
+                                        shape = CircleShape,
+                                        color = Color(0xFF25D366),
+                                        modifier = Modifier.size(40.dp)
+                                    ) {
+                                        Box(contentAlignment = Alignment.Center) {
+                                            Icon(Icons.Default.Chat, contentDescription = null, tint = Color.White, modifier = Modifier.size(22.dp))
+                                        }
+                                    }
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text("WhatsApp", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold), color = Color(0xFF25D366))
+                                        Text("Share prescription PDF via WhatsApp", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+                                    }
+                                    Icon(Icons.Default.ChevronRight, contentDescription = null, tint = TextMuted)
+                                }
+                            }
+
+                            // SMS / Message
+                            Card(
+                                onClick = {
+                                    showShareOptions = false
+                                    shareConfirmMessage = "Prescription shared via SMS successfully!"
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = CardDefaults.cardColors(containerColor = Color(0xFFE3F0FD))
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(16.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    Surface(
+                                        shape = CircleShape,
+                                        color = Color(0xFF1A73E8),
+                                        modifier = Modifier.size(40.dp)
+                                    ) {
+                                        Box(contentAlignment = Alignment.Center) {
+                                            Icon(Icons.Default.Message, contentDescription = null, tint = Color.White, modifier = Modifier.size(22.dp))
+                                        }
+                                    }
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text("Message (SMS)", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold), color = Color(0xFF1A73E8))
+                                        Text("Send prescription summary via text message", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+                                    }
+                                    Icon(Icons.Default.ChevronRight, contentDescription = null, tint = TextMuted)
+                                }
+                            }
+
+                            // Cancel
+                            TextButton(
+                                onClick = { showShareOptions = false },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text("Cancel", color = TextSecondary)
+                            }
+                        }
+                    }
+                }
+
                 // Bottom actions
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(16.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     OutlinedButton(
-                        onClick = { /* mock share */ },
+                        onClick = { showShareOptions = !showShareOptions },
                         modifier = Modifier.weight(1f).height(52.dp),
                         shape = RoundedCornerShape(24.dp)
                     ) {

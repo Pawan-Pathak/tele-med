@@ -91,7 +91,19 @@ data class Doctor(
     val regNumber: String = "",
     val etaMinutes: Int = 0,
     val isAvailable: Boolean = true,
-    val district: String = ""
+    val district: String = "",
+    val languages: List<String> = listOf("Hindi", "English"),
+    val photoUrl: String = ""
+)
+
+data class HealthWorker(
+    val id: String,
+    val name: String,
+    val email: String = "",
+    val phone: String = "",
+    val district: String = "",
+    val village: String = "",
+    val language: String = "Hindi"
 )
 
 data class MedicineFrequency(

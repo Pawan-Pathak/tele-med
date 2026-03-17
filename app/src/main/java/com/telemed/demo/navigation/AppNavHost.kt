@@ -30,7 +30,7 @@ fun AppNavHost(
             RoleSelectionScreen(
                 onRoleSelected = { role ->
                     when (role) {
-                        UserRole.HEALTH_WORKER -> navController.navigate(AppDestination.HWSessionSetup.route)
+                        UserRole.HEALTH_WORKER -> navController.navigate(AppDestination.HWLogin.route)
                         UserRole.PHARMACIST -> navController.navigate(AppDestination.PharmacistLogin.route)
                         UserRole.DOCTOR -> navController.navigate(AppDestination.DoctorLogin.route)
                     }
@@ -39,6 +39,17 @@ fun AppNavHost(
         }
 
         // ==================== Health Worker Flow ====================
+        composable(AppDestination.HWLogin.route) {
+            HWLoginScreen(
+                onLoginSuccess = {
+                    navController.navigate(AppDestination.HWSessionSetup.route) {
+                        popUpTo(AppDestination.HWLogin.route) { inclusive = true }
+                    }
+                },
+                onBack = { navController.popBackStack() }
+            )
+        }
+
         composable(AppDestination.HWSessionSetup.route) {
             val vm: HealthWorkerModuleViewModel = viewModel(
                 viewModelStoreOwner = remember(navController) {
@@ -56,7 +67,6 @@ fun AppNavHost(
         }
 
         composable(AppDestination.HWDashboard.route) {
-            // Share the ViewModel across the HW flow using the session setup entry
             val vm: HealthWorkerModuleViewModel = viewModel(
                 viewModelStoreOwner = remember(navController) {
                     navController.getBackStackEntry(AppDestination.HWSessionSetup.route)
@@ -70,6 +80,9 @@ fun AppNavHost(
                 },
                 onPatientClick = { patientId ->
                     navController.navigate(AppDestination.HWPatientDetail.createRoute(patientId))
+                },
+                onConnectDoctor = {
+                    navController.navigate(AppDestination.HWConnectDoctor.route)
                 },
                 onBack = { navController.popBackStack() }
             )
@@ -177,6 +190,45 @@ fun AppNavHost(
                 viewModel = vm,
                 patientId = patientId,
                 onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(AppDestination.HWConnectDoctor.route) {
+            val vm: HealthWorkerModuleViewModel = viewModel(
+                viewModelStoreOwner = remember(navController) {
+                    navController.getBackStackEntry(AppDestination.HWSessionSetup.route)
+                },
+                factory = factory
+            )
+            HWConnectDoctorScreen(
+                viewModel = vm,
+                onVideoCall = {
+                    navController.navigate(AppDestination.HWVideoCall.route)
+                },
+                onPhoneCall = {
+                    navController.navigate(AppDestination.HWVideoCall.route)
+                },
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(AppDestination.HWVideoCall.route) {
+            val vm: HealthWorkerModuleViewModel = viewModel(
+                viewModelStoreOwner = remember(navController) {
+                    navController.getBackStackEntry(AppDestination.HWSessionSetup.route)
+                },
+                factory = factory
+            )
+            HWVideoCallScreen(
+                viewModel = vm,
+                onCallEnded = {
+                    vm.resetCallState()
+                    navController.popBackStack(AppDestination.HWDashboard.route, inclusive = false)
+                },
+                onBack = {
+                    vm.resetCallState()
+                    navController.popBackStack()
+                }
             )
         }
 

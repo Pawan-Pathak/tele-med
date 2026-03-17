@@ -122,6 +122,20 @@ class InMemoryDoctorRepository(
     override suspend fun getDoctorsByDistrict(district: String): List<Doctor> =
         store.doctors.filter { it.district == district || it.isAvailable }
 
+    override suspend fun getAvailableDoctorsByLanguage(language: String): List<Doctor> =
+        store.doctors.filter { it.isAvailable && it.languages.any { lang -> lang.equals(language, ignoreCase = true) } }
+
+    override suspend fun findBestDoctor(language: String, district: String): Doctor? {
+        delay(500) // simulate network lookup
+        // Priority: 1) Same district + same language + available
+        //           2) Same language + available (any district)
+        //           3) Any available doctor
+        val candidates = store.doctors.filter { it.isAvailable }
+        return candidates.firstOrNull { it.district == district && it.languages.any { l -> l.equals(language, ignoreCase = true) } }
+            ?: candidates.firstOrNull { it.languages.any { l -> l.equals(language, ignoreCase = true) } }
+            ?: candidates.firstOrNull()
+    }
+
     override suspend fun connectDoctor(doctorId: String): Doctor? {
         delay(400)
         val doctor = store.doctors.firstOrNull { it.id == doctorId && it.isAvailable }

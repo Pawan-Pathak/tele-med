@@ -40,6 +40,8 @@ class AppContainer {
     val getDoctorsUseCase = GetDoctorsUseCase(doctorRepository)
     val connectDoctorUseCase = ConnectDoctorUseCase(doctorRepository)
     val saveDoctorConsultationUseCase = SaveDoctorConsultationUseCase(doctorRepository)
+    val findBestDoctorUseCase = FindBestDoctorUseCase(doctorRepository)
+    val getAvailableDoctorsByLanguageUseCase = GetAvailableDoctorsByLanguageUseCase(doctorRepository)
 
     val generatePrescriptionUseCase = GeneratePrescriptionUseCase(prescriptionRepository)
     val getLatestPrescriptionUseCase = GetLatestPrescriptionUseCase(prescriptionRepository)
@@ -63,7 +65,10 @@ class AppViewModelFactory(
                     container.getStatesUseCase,
                     container.saveSpokeLocationUseCase,
                     container.registerPatientUseCase,
-                    container.getRecentPatientsUseCase
+                    container.getRecentPatientsUseCase,
+                    container.findBestDoctorUseCase,
+                    container.startCallUseCase,
+                    container.endCallUseCase
                 ) as T
             }
             modelClass.isAssignableFrom(PharmacistModuleViewModel::class.java) -> {
