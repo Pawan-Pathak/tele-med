@@ -56,7 +56,7 @@ fun RoleSelectionScreen(
                     .padding(horizontal = 16.dp, vertical = 24.dp),
                 verticalArrangement = Arrangement.Bottom
             ) {
-                // App icon
+                // HelpAge app icon
                 Surface(
                     shape = RoundedCornerShape(12.dp),
                     color = BrandPrimary,
@@ -64,7 +64,7 @@ fun RoleSelectionScreen(
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
-                            Icons.Default.LocalHospital,
+                            Icons.Default.VolunteerActivism,
                             contentDescription = null,
                             tint = Color.White,
                             modifier = Modifier.size(28.dp)

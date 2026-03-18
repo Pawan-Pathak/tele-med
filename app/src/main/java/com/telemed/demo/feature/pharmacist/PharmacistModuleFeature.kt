@@ -22,6 +22,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.telemed.demo.R
@@ -94,7 +95,7 @@ class PharmacistModuleViewModel(
             loadQueue()
             if (consent) {
                 _isConnecting.value = true
-                delay(2000) // Simulate connecting
+                delay(2000)
                 startCallUseCase()
                 _isConnecting.value = false
                 _isCallActive.value = true
@@ -129,8 +130,21 @@ class PharmacistModuleViewModel(
     fun submitDispensation() {
         viewModelScope.launch {
             _isLoading.value = true
-            delay(500) // simulate
+            delay(500)
             _isLoading.value = false
+        }
+    }
+
+    // Dispensation status helpers
+    fun getDispensationStatus(): String {
+        val meds = _medicines.value
+        val status = _dispensedStatus.value
+        if (meds.isEmpty()) return "No Prescription"
+        val dispensedCount = meds.count { status[it.name] == true }
+        return when {
+            dispensedCount == 0 -> "Not Dispensed"
+            dispensedCount < meds.size -> "Partial ($dispensedCount/${meds.size})"
+            else -> "Fully Dispensed"
         }
     }
 }
@@ -293,7 +307,6 @@ fun PharmacistConsentScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             if (patient != null) {
-                // Patient details card
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
@@ -314,7 +327,6 @@ fun PharmacistConsentScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Consent question
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
@@ -326,34 +338,17 @@ fun PharmacistConsentScreen(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(20.dp)
                 ) {
-                    Surface(
-                        shape = CircleShape,
-                        color = PharmacistBg,
-                        modifier = Modifier.size(64.dp)
-                    ) {
+                    Surface(shape = CircleShape, color = PharmacistBg, modifier = Modifier.size(64.dp)) {
                         Box(contentAlignment = Alignment.Center) {
                             Icon(Icons.Default.HowToReg, contentDescription = null, tint = PharmacistColor, modifier = Modifier.size(36.dp))
                         }
                     }
 
-                    Text(
-                        stringResource(R.string.consent_question),
-                        style = MaterialTheme.typography.titleMedium,
-                        textAlign = TextAlign.Center,
-                        color = TextPrimary
-                    )
+                    Text(stringResource(R.string.consent_question), style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center, color = TextPrimary)
 
-                    // Full-width stacked YES/NO buttons
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        // YES button — full width
+                    Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         Button(
-                            onClick = {
-                                viewModel.setConsent(patientId, true)
-                                onConsentYes()
-                            },
+                            onClick = { viewModel.setConsent(patientId, true); onConsentYes() },
                             modifier = Modifier.fillMaxWidth().height(56.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = CallAcceptGreen),
                             shape = RoundedCornerShape(24.dp)
@@ -362,13 +357,8 @@ fun PharmacistConsentScreen(
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(stringResource(R.string.yes), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                         }
-
-                        // NO button — full width
                         Button(
-                            onClick = {
-                                viewModel.setConsent(patientId, false)
-                                onConsentNo()
-                            },
+                            onClick = { viewModel.setConsent(patientId, false); onConsentNo() },
                             modifier = Modifier.fillMaxWidth().height(56.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = CallDeclineRed),
                             shape = RoundedCornerShape(24.dp)
@@ -384,7 +374,7 @@ fun PharmacistConsentScreen(
     }
 }
 
-// ============ Video Call Screen (Stub) ============
+// ============ Video Call Screen ============
 
 @Composable
 fun PharmacistVideoCallScreen(
@@ -397,41 +387,27 @@ fun PharmacistVideoCallScreen(
 
     val infiniteTransition = rememberInfiniteTransition(label = "pulse")
     val pulseScale by infiniteTransition.animateFloat(
-        initialValue = 1f,
-        targetValue = 1.3f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(800, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
+        initialValue = 1f, targetValue = 1.3f,
+        animationSpec = infiniteRepeatable(animation = tween(800, easing = FastOutSlowInEasing), repeatMode = RepeatMode.Reverse),
         label = "pulse"
     )
 
     Scaffold { padding ->
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .background(CallDarkBg),
+            modifier = Modifier.fillMaxSize().padding(padding).background(CallDarkBg),
             contentAlignment = Alignment.Center
         ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(24.dp)
-            ) {
-                // Doctor avatar
+            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(24.dp)) {
                 DoctorAvatarImage(
                     doctorName = "Dr. Priya Sharma",
-                    modifier = Modifier
-                        .size(120.dp)
-                        .then(if (isConnecting) Modifier.scale(pulseScale) else Modifier)
+                    modifier = Modifier.size(120.dp).then(if (isConnecting) Modifier.scale(pulseScale) else Modifier)
                 )
 
                 Text(
                     if (isConnecting) stringResource(R.string.connecting_doctor)
                     else if (isCallActive) stringResource(R.string.call_connected)
                     else "Call Ended",
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = Color.White
+                    style = MaterialTheme.typography.headlineMedium, color = Color.White
                 )
 
                 if (isConnecting) {
@@ -439,32 +415,16 @@ fun PharmacistVideoCallScreen(
                 }
 
                 if (isCallActive) {
-                    // Mock video area with doctor avatar
-                    Surface(
-                        modifier = Modifier
-                            .fillMaxWidth(0.85f)
-                            .height(200.dp),
-                        shape = RoundedCornerShape(16.dp),
-                        color = HeaderNavyLighter
-                    ) {
+                    Surface(modifier = Modifier.fillMaxWidth(0.85f).height(200.dp), shape = RoundedCornerShape(16.dp), color = HeaderNavyLighter) {
                         Box(contentAlignment = Alignment.Center) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                DoctorAvatarImage(
-                                    doctorName = "Dr. Priya Sharma",
-                                    modifier = Modifier.size(72.dp)
-                                )
+                                DoctorAvatarImage(doctorName = "Dr. Priya Sharma", modifier = Modifier.size(72.dp))
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text("Video Call Active", color = Color.White.copy(alpha = 0.7f), style = MaterialTheme.typography.bodyMedium)
                             }
                         }
-
-                        // Self-view mini
                         Box(modifier = Modifier.fillMaxSize().padding(12.dp), contentAlignment = Alignment.BottomEnd) {
-                            Surface(
-                                modifier = Modifier.size(width = 80.dp, height = 100.dp),
-                                shape = RoundedCornerShape(8.dp),
-                                color = Color.DarkGray
-                            ) {
+                            Surface(modifier = Modifier.size(width = 80.dp, height = 100.dp), shape = RoundedCornerShape(8.dp), color = Color.DarkGray) {
                                 Box(contentAlignment = Alignment.Center) {
                                     Icon(Icons.Default.Person, contentDescription = null, tint = Color.White.copy(alpha = 0.5f), modifier = Modifier.size(32.dp))
                                 }
@@ -474,37 +434,14 @@ fun PharmacistVideoCallScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Call controls
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(24.dp)
-                    ) {
-                        // Mute button
-                        FilledIconButton(
-                            onClick = { },
-                            modifier = Modifier.size(56.dp),
-                            colors = IconButtonDefaults.filledIconButtonColors(containerColor = Color.White.copy(alpha = 0.15f))
-                        ) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
+                        FilledIconButton(onClick = { }, modifier = Modifier.size(56.dp), colors = IconButtonDefaults.filledIconButtonColors(containerColor = Color.White.copy(alpha = 0.15f))) {
                             Icon(Icons.Default.MicOff, contentDescription = stringResource(R.string.mute), tint = Color.White)
                         }
-
-                        // End call button
-                        FilledIconButton(
-                            onClick = {
-                                viewModel.endCall()
-                                onCallEnded()
-                            },
-                            modifier = Modifier.size(56.dp),
-                            colors = IconButtonDefaults.filledIconButtonColors(containerColor = CallDeclineRed)
-                        ) {
+                        FilledIconButton(onClick = { viewModel.endCall(); onCallEnded() }, modifier = Modifier.size(56.dp), colors = IconButtonDefaults.filledIconButtonColors(containerColor = CallDeclineRed)) {
                             Icon(Icons.Default.CallEnd, contentDescription = stringResource(R.string.end_call), tint = Color.White)
                         }
-
-                        // Camera toggle
-                        FilledIconButton(
-                            onClick = { },
-                            modifier = Modifier.size(56.dp),
-                            colors = IconButtonDefaults.filledIconButtonColors(containerColor = Color.White.copy(alpha = 0.15f))
-                        ) {
+                        FilledIconButton(onClick = { }, modifier = Modifier.size(56.dp), colors = IconButtonDefaults.filledIconButtonColors(containerColor = Color.White.copy(alpha = 0.15f))) {
                             Icon(Icons.Default.VideocamOff, contentDescription = null, tint = Color.White)
                         }
                     }
@@ -514,7 +451,7 @@ fun PharmacistVideoCallScreen(
     }
 }
 
-// ============ Prescription Dispense Screen ============
+// ============ Prescription Dispense Screen with share + dispensation status ============
 
 @Composable
 fun PharmacistDispenseScreen(
@@ -529,6 +466,30 @@ fun PharmacistDispenseScreen(
 
     LaunchedEffect(Unit) { viewModel.loadPrescriptionData() }
 
+    // Calculate dispensation status
+    val dispensedCount = medicines.count { dispensedStatus[it.name] == true }
+    val dispensationLabel = when {
+        medicines.isEmpty() -> "No Prescription"
+        dispensedCount == 0 -> "Not Dispensed"
+        dispensedCount < medicines.size -> "Partially Dispensed ($dispensedCount/${medicines.size})"
+        else -> "Fully Dispensed"
+    }
+    val dispensationColor = when {
+        medicines.isEmpty() -> TextMuted
+        dispensedCount == 0 -> StatusAlertText
+        dispensedCount < medicines.size -> StatusAwaitingText
+        else -> StatusDoneText
+    }
+    val dispensationBg = when {
+        medicines.isEmpty() -> BackgroundPage
+        dispensedCount == 0 -> StatusAlertBg
+        dispensedCount < medicines.size -> StatusAwaitingBg
+        else -> StatusDoneBg
+    }
+
+    var showShareOptions by remember { mutableStateOf(false) }
+    var shareConfirmMessage by remember { mutableStateOf("") }
+
     Scaffold(
         topBar = { AppTopBar(title = stringResource(R.string.prescribed_medicines), onBack = onBack) },
         containerColor = BackgroundPage
@@ -540,10 +501,7 @@ fun PharmacistDispenseScreen(
                 .padding(16.dp)
         ) {
             if (medicines.isEmpty() && prescription == null) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(Icons.Default.MedicalInformation, contentDescription = null, modifier = Modifier.size(64.dp), tint = TextSecondary)
                         Spacer(modifier = Modifier.height(8.dp))
@@ -552,12 +510,89 @@ fun PharmacistDispenseScreen(
                     }
                 }
             } else {
-                // Prescription ready card at the top
+                // Prescription ready card
                 if (prescription != null) {
                     PrescriptionReadyCard()
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
                 }
 
+                // Dispensation Status Banner
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = dispensationBg)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            when {
+                                dispensedCount == 0 -> Icons.Default.Warning
+                                dispensedCount < medicines.size -> Icons.Default.Pending
+                                else -> Icons.Default.CheckCircle
+                            },
+                            contentDescription = null,
+                            tint = dispensationColor,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Text(dispensationLabel, style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold), color = dispensationColor, modifier = Modifier.weight(1f))
+                        Text("$dispensedCount/${medicines.size}", style = MaterialTheme.typography.labelMedium, color = dispensationColor)
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Share confirm banner
+                if (shareConfirmMessage.isNotEmpty()) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(containerColor = StatusDoneBg)
+                    ) {
+                        Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Icon(Icons.Default.CheckCircle, contentDescription = null, tint = StatusDoneText, modifier = Modifier.size(20.dp))
+                            Text(shareConfirmMessage, style = MaterialTheme.typography.bodyMedium, color = StatusDoneText, modifier = Modifier.weight(1f))
+                            IconButton(onClick = { shareConfirmMessage = "" }, modifier = Modifier.size(24.dp)) {
+                                Icon(Icons.Default.Close, contentDescription = "Dismiss", tint = StatusDoneText, modifier = Modifier.size(16.dp))
+                            }
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+                }
+
+                // Share options panel
+                if (showShareOptions) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = BackgroundCard),
+                        elevation = CardDefaults.cardElevation(4.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Text("Share Prescription via", style = MaterialTheme.typography.titleSmall, color = TextPrimary)
+                            // WhatsApp
+                            ShareOptionRow(label = "WhatsApp", subtitle = "Share PDF via WhatsApp", iconTint = WhatsAppGreen, icon = Icons.Default.Chat, bgColor = Color(0xFFE7F5E7)) {
+                                showShareOptions = false; shareConfirmMessage = "Prescription shared via WhatsApp!"
+                            }
+                            // SMS
+                            ShareOptionRow(label = "Message (SMS)", subtitle = "Send summary via SMS", iconTint = Color(0xFF1A73E8), icon = Icons.Default.Message, bgColor = Color(0xFFE3F0FD)) {
+                                showShareOptions = false; shareConfirmMessage = "Prescription shared via SMS!"
+                            }
+                            // MMS
+                            ShareOptionRow(label = "MMS", subtitle = "Send as picture message", iconTint = MMSBlue, icon = Icons.Default.Mms, bgColor = Color(0xFFE0ECFF)) {
+                                showShareOptions = false; shareConfirmMessage = "Prescription shared via MMS!"
+                            }
+                            TextButton(onClick = { showShareOptions = false }, modifier = Modifier.fillMaxWidth()) {
+                                Text("Cancel", color = TextSecondary)
+                            }
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+                }
+
+                // Medicines list
                 LazyColumn(
                     modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -574,19 +609,65 @@ fun PharmacistDispenseScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Share prescription button
+                OutlinedButton(
+                    onClick = { showShareOptions = !showShareOptions },
+                    modifier = Modifier.fillMaxWidth().height(48.dp),
+                    shape = RoundedCornerShape(24.dp)
+                ) {
+                    Icon(Icons.Default.Share, contentDescription = null, tint = PharmacistColor)
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Share Prescription", color = PharmacistColor)
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
 
                 LargeButton(
                     text = stringResource(R.string.submit_dispensation),
-                    onClick = {
-                        viewModel.submitDispensation()
-                        onDone()
-                    },
+                    onClick = { viewModel.submitDispensation(); onDone() },
                     isLoading = isLoading,
                     color = PharmacistColor,
                     icon = Icons.Default.CheckCircle
                 )
             }
+        }
+    }
+}
+
+// ============ Share Option Row (reusable) ============
+
+@Composable
+private fun ShareOptionRow(
+    label: String,
+    subtitle: String,
+    iconTint: Color,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    bgColor: Color,
+    onClick: () -> Unit
+) {
+    Card(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(10.dp),
+        colors = CardDefaults.cardColors(containerColor = bgColor)
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Surface(shape = CircleShape, color = iconTint, modifier = Modifier.size(36.dp)) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
+                }
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                Text(label, style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold), color = iconTint)
+                Text(subtitle, style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+            }
+            Icon(Icons.Default.ChevronRight, contentDescription = null, tint = TextMuted, modifier = Modifier.size(18.dp))
         }
     }
 }

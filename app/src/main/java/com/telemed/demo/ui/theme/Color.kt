@@ -3,17 +3,17 @@ package com.telemed.demo.ui.theme
 import androidx.compose.ui.graphics.Color
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// PRIMARY BRAND
+// PRIMARY BRAND — HelpAge India
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-val BrandPrimary = Color(0xFFC05A1F)          // warm terracotta/amber — main CTAs
-val BrandPrimaryLight = Color(0xFFD4844F)
-val BrandPrimaryDark = Color(0xFF8C3E10)
-val BrandPrimaryContainer = Color(0xFFFFF0E6) // light terracotta bg
+val BrandPrimary = Color(0xFFCE2227)          // HelpAge red
+val BrandPrimaryLight = Color(0xFFE04E52)
+val BrandPrimaryDark = Color(0xFF9A181C)
+val BrandPrimaryContainer = Color(0xFFFDE8E8) // light red bg
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // BACKGROUNDS
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-val BackgroundPage = Color(0xFFF0EDE6)         // off-white cream
+val BackgroundPage = Color(0xFFF5F3F0)         // warm off-white
 val BackgroundCard = Color(0xFFFFFFFF)          // white cards
 val BackgroundDark = Color(0xFF1C1B1F)
 val SurfaceDark = Color(0xFF2C2B30)
@@ -21,8 +21,8 @@ val SurfaceDark = Color(0xFF2C2B30)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // HEADER / HERO
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-val HeaderNavy = Color(0xFF0D1F2D)             // deep medical navy
-val HeaderNavyLighter = Color(0xFF1A3347)      // +8% lighter for decorative circle
+val HeaderNavy = Color(0xFF1A1A2E)             // deep navy
+val HeaderNavyLighter = Color(0xFF2D2D44)      // lighter for decorative circle
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // ACCENT TEAL (Clinical trust — Doctor module)
@@ -42,11 +42,11 @@ val TextOnDark = Color(0xFFFFFFFF)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // MODULE IDENTITY COLORS
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-val HealthWorkerColor = Color(0xFFC05A1F)      // terracotta — field/grassroots
+val HealthWorkerColor = Color(0xFFCE2227)      // HelpAge red — field/grassroots
 val PharmacistColor = Color(0xFF7B5EA7)        // muted violet — dispensary
 val DoctorColor = Color(0xFF0B6E6E)            // clinical teal — medical authority
 
-val HealthWorkerBg = Color(0xFFFFF0E6)
+val HealthWorkerBg = Color(0xFFFDE8E8)
 val PharmacistBg = Color(0xFFF3EDF9)
 val DoctorBg = Color(0xFFE0F2F2)
 
@@ -77,6 +77,10 @@ val StatusAwaitingText = Color(0xFF856404)
 val StatusUploadedBg = Color(0xFFE3F4E8)
 val StatusUploadedText = Color(0xFF1B6B2E)
 
+// Doctor Busy
+val StatusBusyBg = Color(0xFFFFF0E0)
+val StatusBusyText = Color(0xFFD4770B)
+
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // DIVIDER / OUTLINE
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -89,8 +93,8 @@ val CardShadow = Color(0x14000000)             // rgba(0,0,0,0.08)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 val DateFieldBg = Color(0xFFFFF8F0)
 val DateFieldBorder = Color(0xFFF0D9C0)
-val UniqueIdBg = Color(0xFFFFF8F0)
-val UniqueIdBorder = Color(0xFFC05A1F)
+val UniqueIdBg = Color(0xFFFDE8E8)
+val UniqueIdBorder = Color(0xFFCE2227)
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // INACTIVE / STEP
@@ -101,10 +105,14 @@ val InactiveTabText = Color(0xFF9E9E9E)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // CALL SCREEN BACKGROUNDS
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-val CallDarkBg = Color(0xFF0D1F2D)
+val CallDarkBg = Color(0xFF1A1A2E)
 val CallAcceptGreen = Color(0xFF2E7D32)
 val CallDeclineRed = Color(0xFFC0392B)
 
 // Legacy compatibility aliases
 val AccentRed = Color(0xFFC0392B)
 val CardBackground = Color(0xFFFFFFFF)
+
+// MMS / WhatsApp colors
+val WhatsAppGreen = Color(0xFF25D366)
+val MMSBlue = Color(0xFF0078D7)
