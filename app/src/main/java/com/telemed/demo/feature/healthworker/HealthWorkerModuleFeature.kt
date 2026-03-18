@@ -23,6 +23,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -479,188 +480,528 @@ fun HWConnectDoctorScreen(
     val selectedCallPatient by viewModel.selectedCallPatient.collectAsState()
     val selectedLanguage by viewModel.selectedLanguage.collectAsState()
 
-    Scaffold(
-        topBar = { AppTopBar(title = "Connect to Doctor", onBack = onBack) },
-        containerColor = BackgroundPage
-    ) { padding ->
+    val waitingPatients = recentPatients.filter { it.status == ConsultationStatus.WAITING || it.status == ConsultationStatus.REGISTERED }
+
+    Scaffold(containerColor = BackgroundPage) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Info card
-            Card(
+            // ── Top bar: back + call type icons side-by-side + patient name + status ──
+            Surface(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = DoctorBg)
+                color = HeaderNavy,
+                shadowElevation = 4.dp
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Info, contentDescription = null, tint = DoctorColor, modifier = Modifier.size(20.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Doctor Consultation", style = MaterialTheme.typography.titleMedium, color = DoctorColor)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Back button
+                    IconButton(onClick = onBack, modifier = Modifier.size(40.dp)) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
                     }
-                    Spacer(modifier = Modifier.height(4.dp))
+
+                    // Call type icons side by side
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = DoctorColor.copy(alpha = 0.25f),
+                            modifier = Modifier.size(34.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(Icons.Default.Videocam, contentDescription = "Video", tint = Color.White, modifier = Modifier.size(19.dp))
+                            }
+                        }
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = CallAcceptGreen.copy(alpha = 0.25f),
+                            modifier = Modifier.size(34.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(Icons.Default.Phone, contentDescription = "Phone", tint = Color.White, modifier = Modifier.size(19.dp))
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.width(12.dp))
+
+                    // Center: patient name or consultation label
+                    Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = selectedCallPatient?.fullName ?: "Doctor Consultation",
+                            style = MaterialTheme.typography.titleSmall,
+                            color = Color.White,
+                            maxLines = 1
+                        )
+                        if (selectedCallPatient != null) {
+                            Text(
+                                text = "${selectedCallPatient!!.age}y · ${selectedCallPatient!!.gender.name}",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color.White.copy(alpha = 0.6f),
+                                maxLines = 1
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.width(12.dp))
+
+                    // Right: ready status badge
+                    Surface(shape = RoundedCornerShape(12.dp), color = Color.White.copy(alpha = 0.12f)) {
+                        Text(
+                            text = if (selectedCallPatient != null) "Ready" else "Select Patient",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color.White,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                        )
+                    }
+                }
+            }
+
+            // ── One-liner info banner ──
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = DoctorBg
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(Icons.Default.Info, contentDescription = null, tint = DoctorColor, modifier = Modifier.size(16.dp))
                     Text(
-                        "Connect with an available doctor who speaks $selectedLanguage. Choose video call for best experience or phone call for low connectivity areas.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = TextSecondary
+                        "Connect with a $selectedLanguage-speaking doctor via video or phone",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = DoctorColor,
+                        maxLines = 1
                     )
                 }
             }
 
-            // Language selection
-            SectionHeader("Consultation Language", moduleColor = HealthWorkerColor)
-            DropdownField(
-                value = selectedLanguage,
-                onValueChange = viewModel::setLanguage,
-                label = "Language",
-                options = viewModel.availableLanguages
-            )
+            // ── Scrollable content area ──
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // Language selection (compact)
+                SectionHeader("Language", moduleColor = HealthWorkerColor)
+                DropdownField(
+                    value = selectedLanguage,
+                    onValueChange = viewModel::setLanguage,
+                    label = "Language",
+                    options = viewModel.availableLanguages
+                )
 
-            // Patient selection
-            SectionHeader("Select Patient", moduleColor = HealthWorkerColor)
+                // Patient selection
+                SectionHeader("Select Patient", moduleColor = HealthWorkerColor)
 
-            val waitingPatients = recentPatients.filter { it.status == ConsultationStatus.WAITING || it.status == ConsultationStatus.REGISTERED }
-            if (waitingPatients.isEmpty()) {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = BackgroundCard)
-                ) {
-                    Column(
-                        modifier = Modifier.padding(24.dp).fillMaxWidth(),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Icon(Icons.Default.PersonOff, contentDescription = null, tint = TextMuted, modifier = Modifier.size(48.dp))
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text("No patients waiting for consultation", style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
-                    }
-                }
-            } else {
-                waitingPatients.forEach { patient ->
-                    val isSelected = selectedCallPatient?.id == patient.id
+                if (waitingPatients.isEmpty()) {
                     Card(
-                        onClick = { viewModel.selectPatientForCall(patient) },
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = if (isSelected) HealthWorkerBg else BackgroundCard
-                        ),
-                        border = if (isSelected) androidx.compose.foundation.BorderStroke(2.dp, HealthWorkerColor) else null
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(containerColor = BackgroundCard)
                     ) {
                         Row(
-                            modifier = Modifier.padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            modifier = Modifier.padding(16.dp).fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Surface(shape = CircleShape, color = HealthWorkerColor.copy(alpha = 0.12f), modifier = Modifier.size(44.dp)) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Text(
-                                        patient.fullName.split(" ").take(2).joinToString("") { it.first().uppercase() },
-                                        style = MaterialTheme.typography.titleSmall,
-                                        color = HealthWorkerColor
-                                    )
+                            Icon(Icons.Default.PersonOff, contentDescription = null, tint = TextMuted, modifier = Modifier.size(24.dp))
+                            Text("No patients waiting", style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
+                        }
+                    }
+                } else {
+                    waitingPatients.forEach { patient ->
+                        val isSelected = selectedCallPatient?.id == patient.id
+                        Card(
+                            onClick = { viewModel.selectPatientForCall(patient) },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = if (isSelected) HealthWorkerBg else BackgroundCard
+                            ),
+                            border = if (isSelected) androidx.compose.foundation.BorderStroke(2.dp, HealthWorkerColor) else null
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                Surface(shape = CircleShape, color = HealthWorkerColor.copy(alpha = 0.12f), modifier = Modifier.size(40.dp)) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Text(
+                                            patient.fullName.split(" ").take(2).joinToString("") { it.first().uppercase() },
+                                            style = MaterialTheme.typography.labelMedium,
+                                            color = HealthWorkerColor
+                                        )
+                                    }
+                                }
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(patient.fullName, style = MaterialTheme.typography.titleSmall, color = TextPrimary)
+                                    Text("${patient.age}y • ${patient.gender.name} • ${patient.medicalHistory.primaryComplaint}", style = MaterialTheme.typography.bodySmall, color = TextSecondary, maxLines = 1)
+                                }
+                                if (isSelected) {
+                                    Icon(Icons.Default.CheckCircle, contentDescription = null, tint = HealthWorkerColor, modifier = Modifier.size(22.dp))
                                 }
                             }
+                        }
+                    }
+                }
+
+                if (selectedCallPatient == null && waitingPatients.isNotEmpty()) {
+                    Text(
+                        "Select a patient above to enable call options",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = StatusAlertText,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            }
+
+            // ── Bottom pinned call controls ──
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = BackgroundCard,
+                shadowElevation = 8.dp
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    // Side-by-side call buttons
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        // Video Call Button
+                        Button(
+                            onClick = {
+                                if (selectedCallPatient != null) {
+                                    viewModel.searchAndConnectDoctor(isPhone = false)
+                                    onVideoCall()
+                                }
+                            },
+                            modifier = Modifier.weight(1f).height(52.dp),
+                            enabled = selectedCallPatient != null,
+                            shape = RoundedCornerShape(14.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = DoctorColor,
+                                disabledContainerColor = DoctorColor.copy(alpha = 0.3f)
+                            )
+                        ) {
+                            Icon(Icons.Default.Videocam, contentDescription = null, modifier = Modifier.size(22.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Video Call", style = MaterialTheme.typography.titleSmall)
+                        }
+
+                        // Phone Call Button
+                        Button(
+                            onClick = {
+                                if (selectedCallPatient != null) {
+                                    viewModel.searchAndConnectDoctor(isPhone = true)
+                                    onPhoneCall()
+                                }
+                            },
+                            modifier = Modifier.weight(1f).height(52.dp),
+                            enabled = selectedCallPatient != null,
+                            shape = RoundedCornerShape(14.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = CallAcceptGreen,
+                                disabledContainerColor = CallAcceptGreen.copy(alpha = 0.3f)
+                            )
+                        ) {
+                            Icon(Icons.Default.Phone, contentDescription = null, modifier = Modifier.size(22.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Phone Call", style = MaterialTheme.typography.titleSmall)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// ============ HWConnectDoctorScreen Preview ============
+
+@Preview(showBackground = true, showSystemUi = true, name = "Connect Doctor - Patient Selected")
+@Composable
+private fun HWConnectDoctorScreenPreview() {
+    MaterialTheme {
+        val mockPatient = Patient(
+            id = "P-001",
+            fullName = "Ramesh Kumar",
+            gender = Gender.MALE,
+            age = 65,
+            mobile = "9876543210",
+            medicalHistory = MedicalHistory(primaryComplaint = "Chest pain"),
+            status = ConsultationStatus.WAITING
+        )
+        val mockPatient2 = Patient(
+            id = "P-002",
+            fullName = "Sita Devi",
+            gender = Gender.FEMALE,
+            age = 58,
+            medicalHistory = MedicalHistory(primaryComplaint = "Fever & cough"),
+            status = ConsultationStatus.REGISTERED
+        )
+        val selectedPatient = mockPatient
+
+        Scaffold(containerColor = BackgroundPage) { padding ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+            ) {
+                // ── Top bar ──
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = HeaderNavy,
+                    shadowElevation = 4.dp
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 8.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        IconButton(onClick = {}, modifier = Modifier.size(40.dp)) {
+                            Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
+                        }
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Surface(shape = RoundedCornerShape(8.dp), color = DoctorColor.copy(alpha = 0.25f), modifier = Modifier.size(34.dp)) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(Icons.Default.Videocam, contentDescription = "Video", tint = Color.White, modifier = Modifier.size(19.dp))
+                                }
+                            }
+                            Surface(shape = RoundedCornerShape(8.dp), color = CallAcceptGreen.copy(alpha = 0.25f), modifier = Modifier.size(34.dp)) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(Icons.Default.Phone, contentDescription = "Phone", tint = Color.White, modifier = Modifier.size(19.dp))
+                                }
+                            }
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(selectedPatient.fullName, style = MaterialTheme.typography.titleSmall, color = Color.White, maxLines = 1)
+                            Text("${selectedPatient.age}y · ${selectedPatient.gender.name}", style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.6f), maxLines = 1)
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Surface(shape = RoundedCornerShape(12.dp), color = Color.White.copy(alpha = 0.12f)) {
+                            Text("Ready", style = MaterialTheme.typography.labelSmall, color = Color.White, modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp))
+                        }
+                    }
+                }
+
+                // ── One-liner info banner ──
+                Surface(modifier = Modifier.fillMaxWidth(), color = DoctorBg) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(Icons.Default.Info, contentDescription = null, tint = DoctorColor, modifier = Modifier.size(16.dp))
+                        Text("Connect with a Hindi-speaking doctor via video or phone", style = MaterialTheme.typography.bodySmall, color = DoctorColor, maxLines = 1)
+                    }
+                }
+
+                // ── Content ──
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text("Language", style = MaterialTheme.typography.titleSmall, color = HealthWorkerColor)
+                    Surface(modifier = Modifier.fillMaxWidth().height(48.dp), shape = RoundedCornerShape(12.dp), color = BackgroundCard) {
+                        Row(modifier = Modifier.padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Text("Hindi", style = MaterialTheme.typography.bodyMedium, color = TextPrimary, modifier = Modifier.weight(1f))
+                            Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = TextMuted)
+                        }
+                    }
+
+                    Text("Select Patient", style = MaterialTheme.typography.titleSmall, color = HealthWorkerColor)
+
+                    // Selected patient card
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(containerColor = HealthWorkerBg),
+                        border = androidx.compose.foundation.BorderStroke(2.dp, HealthWorkerColor)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Surface(shape = CircleShape, color = HealthWorkerColor.copy(alpha = 0.12f), modifier = Modifier.size(40.dp)) {
+                                Box(contentAlignment = Alignment.Center) { Text("RK", style = MaterialTheme.typography.labelMedium, color = HealthWorkerColor) }
+                            }
                             Column(modifier = Modifier.weight(1f)) {
-                                Text(patient.fullName, style = MaterialTheme.typography.titleSmall, color = TextPrimary)
-                                Text("${patient.age}y • ${patient.gender.name} • ${patient.medicalHistory.primaryComplaint}", style = MaterialTheme.typography.bodySmall, color = TextSecondary, maxLines = 1)
+                                Text("Ramesh Kumar", style = MaterialTheme.typography.titleSmall, color = TextPrimary)
+                                Text("65y • MALE • Chest pain", style = MaterialTheme.typography.bodySmall, color = TextSecondary, maxLines = 1)
                             }
-                            if (isSelected) {
-                                Icon(Icons.Default.CheckCircle, contentDescription = null, tint = HealthWorkerColor)
+                            Icon(Icons.Default.CheckCircle, contentDescription = null, tint = HealthWorkerColor, modifier = Modifier.size(22.dp))
+                        }
+                    }
+
+                    // Unselected patient card
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(containerColor = BackgroundCard)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Surface(shape = CircleShape, color = HealthWorkerColor.copy(alpha = 0.12f), modifier = Modifier.size(40.dp)) {
+                                Box(contentAlignment = Alignment.Center) { Text("SD", style = MaterialTheme.typography.labelMedium, color = HealthWorkerColor) }
+                            }
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text("Sita Devi", style = MaterialTheme.typography.titleSmall, color = TextPrimary)
+                                Text("58y • FEMALE • Fever & cough", style = MaterialTheme.typography.bodySmall, color = TextSecondary, maxLines = 1)
+                            }
+                        }
+                    }
+                }
+
+                // ── Bottom pinned call controls ──
+                Surface(modifier = Modifier.fillMaxWidth(), color = BackgroundCard, shadowElevation = 8.dp) {
+                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Button(
+                                onClick = {},
+                                modifier = Modifier.weight(1f).height(52.dp),
+                                shape = RoundedCornerShape(14.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = DoctorColor)
+                            ) {
+                                Icon(Icons.Default.Videocam, contentDescription = null, modifier = Modifier.size(22.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Video Call", style = MaterialTheme.typography.titleSmall)
+                            }
+                            Button(
+                                onClick = {},
+                                modifier = Modifier.weight(1f).height(52.dp),
+                                shape = RoundedCornerShape(14.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = CallAcceptGreen)
+                            ) {
+                                Icon(Icons.Default.Phone, contentDescription = null, modifier = Modifier.size(22.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Phone Call", style = MaterialTheme.typography.titleSmall)
                             }
                         }
                     }
                 }
             }
+        }
+    }
+}
 
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Call options
-            SectionHeader("Choose Call Type", moduleColor = HealthWorkerColor)
-
-            // Video Call Button
-            Card(
-                onClick = {
-                    if (selectedCallPatient != null) {
-                        viewModel.searchAndConnectDoctor(isPhone = false)
-                        onVideoCall()
-                    }
-                },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = BackgroundCard),
-                enabled = selectedCallPatient != null
+@Preview(showBackground = true, showSystemUi = true, name = "Connect Doctor - No Patient Selected")
+@Composable
+private fun HWConnectDoctorScreenNoSelectionPreview() {
+    MaterialTheme {
+        Scaffold(containerColor = BackgroundPage) { padding ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
             ) {
-                Row(
-                    modifier = Modifier.padding(20.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = DoctorColor.copy(alpha = 0.12f),
-                        modifier = Modifier.size(56.dp)
+                // ── Top bar ──
+                Surface(modifier = Modifier.fillMaxWidth(), color = HeaderNavy, shadowElevation = 4.dp) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(Icons.Default.VideoCall, contentDescription = null, tint = DoctorColor, modifier = Modifier.size(32.dp))
+                        IconButton(onClick = {}, modifier = Modifier.size(40.dp)) {
+                            Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
+                        }
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Surface(shape = RoundedCornerShape(8.dp), color = DoctorColor.copy(alpha = 0.25f), modifier = Modifier.size(34.dp)) {
+                                Box(contentAlignment = Alignment.Center) { Icon(Icons.Default.Videocam, contentDescription = "Video", tint = Color.White, modifier = Modifier.size(19.dp)) }
+                            }
+                            Surface(shape = RoundedCornerShape(8.dp), color = CallAcceptGreen.copy(alpha = 0.25f), modifier = Modifier.size(34.dp)) {
+                                Box(contentAlignment = Alignment.Center) { Icon(Icons.Default.Phone, contentDescription = "Phone", tint = Color.White, modifier = Modifier.size(19.dp)) }
+                            }
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text("Doctor Consultation", style = MaterialTheme.typography.titleSmall, color = Color.White, maxLines = 1)
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Surface(shape = RoundedCornerShape(12.dp), color = Color.White.copy(alpha = 0.12f)) {
+                            Text("Select Patient", style = MaterialTheme.typography.labelSmall, color = Color.White, modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp))
                         }
                     }
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text("Video Call", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold), color = TextPrimary)
-                        Text("Best for detailed consultation with good internet", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
-                    }
-                    Icon(Icons.Default.ChevronRight, contentDescription = null, tint = TextMuted)
                 }
-            }
 
-            // Phone Call Button
-            Card(
-                onClick = {
-                    if (selectedCallPatient != null) {
-                        viewModel.searchAndConnectDoctor(isPhone = true)
-                        onPhoneCall()
+                Surface(modifier = Modifier.fillMaxWidth(), color = DoctorBg) {
+                    Row(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Icon(Icons.Default.Info, contentDescription = null, tint = DoctorColor, modifier = Modifier.size(16.dp))
+                        Text("Connect with a Hindi-speaking doctor via video or phone", style = MaterialTheme.typography.bodySmall, color = DoctorColor, maxLines = 1)
                     }
-                },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = BackgroundCard),
-                enabled = selectedCallPatient != null
-            ) {
-                Row(
-                    modifier = Modifier.padding(20.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                }
+
+                Column(
+                    modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = CallAcceptGreen.copy(alpha = 0.12f),
-                        modifier = Modifier.size(56.dp)
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(Icons.Default.Phone, contentDescription = null, tint = CallAcceptGreen, modifier = Modifier.size(32.dp))
+                    Text("Language", style = MaterialTheme.typography.titleSmall, color = HealthWorkerColor)
+                    Surface(modifier = Modifier.fillMaxWidth().height(48.dp), shape = RoundedCornerShape(12.dp), color = BackgroundCard) {
+                        Row(modifier = Modifier.padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Text("Hindi", style = MaterialTheme.typography.bodyMedium, color = TextPrimary, modifier = Modifier.weight(1f))
+                            Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = TextMuted)
                         }
                     }
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text("Phone Call", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold), color = TextPrimary)
-                        Text("For low connectivity or no internet areas", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
-                    }
-                    Icon(Icons.Default.ChevronRight, contentDescription = null, tint = TextMuted)
-                }
-            }
 
-            if (selectedCallPatient == null && waitingPatients.isNotEmpty()) {
-                Text(
-                    "Please select a patient to proceed",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = StatusAlertText,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth()
-                )
+                    Text("Select Patient", style = MaterialTheme.typography.titleSmall, color = HealthWorkerColor)
+
+                    Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), colors = CardDefaults.cardColors(containerColor = BackgroundCard)) {
+                        Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Surface(shape = CircleShape, color = HealthWorkerColor.copy(alpha = 0.12f), modifier = Modifier.size(40.dp)) {
+                                Box(contentAlignment = Alignment.Center) { Text("RK", style = MaterialTheme.typography.labelMedium, color = HealthWorkerColor) }
+                            }
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text("Ramesh Kumar", style = MaterialTheme.typography.titleSmall, color = TextPrimary)
+                                Text("65y • MALE • Chest pain", style = MaterialTheme.typography.bodySmall, color = TextSecondary, maxLines = 1)
+                            }
+                        }
+                    }
+
+                    Text("Select a patient above to enable call options", style = MaterialTheme.typography.bodySmall, color = StatusAlertText, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+                }
+
+                // ── Bottom pinned call controls (disabled) ──
+                Surface(modifier = Modifier.fillMaxWidth(), color = BackgroundCard, shadowElevation = 8.dp) {
+                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Button(
+                                onClick = {}, modifier = Modifier.weight(1f).height(52.dp), enabled = false,
+                                shape = RoundedCornerShape(14.dp), colors = ButtonDefaults.buttonColors(containerColor = DoctorColor, disabledContainerColor = DoctorColor.copy(alpha = 0.3f))
+                            ) {
+                                Icon(Icons.Default.Videocam, contentDescription = null, modifier = Modifier.size(22.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Video Call", style = MaterialTheme.typography.titleSmall)
+                            }
+                            Button(
+                                onClick = {}, modifier = Modifier.weight(1f).height(52.dp), enabled = false,
+                                shape = RoundedCornerShape(14.dp), colors = ButtonDefaults.buttonColors(containerColor = CallAcceptGreen, disabledContainerColor = CallAcceptGreen.copy(alpha = 0.3f))
+                            ) {
+                                Icon(Icons.Default.Phone, contentDescription = null, modifier = Modifier.size(22.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Phone Call", style = MaterialTheme.typography.titleSmall)
+                            }
+                        }
+                    }
+                }
             }
         }
     }
