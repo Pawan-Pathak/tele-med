@@ -148,6 +148,9 @@ class HealthWorkerModuleViewModel(
     val callDuration: StateFlow<Int> = _callDuration.asStateFlow()
     private val _selectedCallPatient = MutableStateFlow<Patient?>(null)
     val selectedCallPatient: StateFlow<Patient?> = _selectedCallPatient.asStateFlow()
+    // Call status: "searching", "doctor_busy", "no_doctor", "connecting", "ringing", "active", "ended", ""
+    private val _callStatus = MutableStateFlow("")
+    val callStatus: StateFlow<String> = _callStatus.asStateFlow()
 
     val symptoms = listOf("Fever", "Cough", "Headache", "Fatigue", "Pain", "Breathlessness", "Other")
     val conditions = listOf("Diabetes", "Hypertension", "TB", "Heart Disease", "None")
@@ -219,22 +222,38 @@ class HealthWorkerModuleViewModel(
             _isPhoneCall.value = isPhone
             _isSearchingDoctor.value = true
             _matchedDoctor.value = null
+            _callStatus.value = "searching"
 
             // Find best doctor matching language and district
             val doctor = findBestDoctorUseCase(_selectedLanguage.value, _selectedDistrict.value)
+
+            if (doctor == null) {
+                _isSearchingDoctor.value = false
+                _callStatus.value = "no_doctor"
+                return@launch
+            }
+
             _matchedDoctor.value = doctor
             _isSearchingDoctor.value = false
 
-            if (doctor != null) {
-                _isConnecting.value = true
-                delay(2500) // simulate ringing/connecting
-                startCallUseCase()
-                _isConnecting.value = false
-                _isCallActive.value = true
-
-                // Start call timer
-                startCallTimer()
+            // Simulate doctor might be busy (for demo: if doctor ETA > 6, simulate busy then retry)
+            if (doctor.etaMinutes > 6) {
+                _callStatus.value = "doctor_busy"
+                delay(2000)
+                // Auto-retry with next available
+                _callStatus.value = "searching"
+                delay(1500)
             }
+
+            _callStatus.value = "ringing"
+            _isConnecting.value = true
+            delay(2500)
+            startCallUseCase()
+            _isConnecting.value = false
+            _isCallActive.value = true
+            _callStatus.value = "active"
+
+            startCallTimer()
         }
     }
 
@@ -267,6 +286,7 @@ class HealthWorkerModuleViewModel(
         _isPhoneCall.value = false
         _callDuration.value = 0
         _selectedCallPatient.value = null
+        _callStatus.value = ""
     }
 }
 
@@ -302,7 +322,7 @@ fun HWLoginScreen(
                 modifier = Modifier.size(80.dp)
             ) {
                 Box(contentAlignment = Alignment.Center) {
-                    Icon(Icons.Default.PersonSearch, contentDescription = null, tint = HealthWorkerColor, modifier = Modifier.size(44.dp))
+                    Icon(Icons.Default.VolunteerActivism, contentDescription = null, tint = HealthWorkerColor, modifier = Modifier.size(44.dp))
                 }
             }
 
@@ -662,15 +682,12 @@ fun HWVideoCallScreen(
     val callDuration by viewModel.callDuration.collectAsState()
     val selectedLanguage by viewModel.selectedLanguage.collectAsState()
     val selectedCallPatient by viewModel.selectedCallPatient.collectAsState()
+    val callStatus by viewModel.callStatus.collectAsState()
 
     val infiniteTransition = rememberInfiniteTransition(label = "pulse")
     val pulseScale by infiniteTransition.animateFloat(
-        initialValue = 1f,
-        targetValue = 1.3f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(800, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
+        initialValue = 1f, targetValue = 1.3f,
+        animationSpec = infiniteRepeatable(animation = tween(800, easing = FastOutSlowInEasing), repeatMode = RepeatMode.Reverse),
         label = "pulse"
     )
 
@@ -682,197 +699,205 @@ fun HWVideoCallScreen(
 
     Scaffold { padding ->
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .background(CallDarkBg),
-            contentAlignment = Alignment.Center
+            modifier = Modifier.fillMaxSize().padding(padding).background(CallDarkBg)
         ) {
             Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                modifier = Modifier.padding(24.dp)
+                modifier = Modifier.fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                when {
-                    isSearchingDoctor -> {
-                        // Searching for doctor
-                        Icon(Icons.Default.Search, contentDescription = null, tint = Color.White.copy(alpha = 0.5f), modifier = Modifier.size(64.dp))
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text("Finding a doctor...", style = MaterialTheme.typography.headlineSmall, color = Color.White)
-                        Text("Looking for available doctors who speak $selectedLanguage", style = MaterialTheme.typography.bodyMedium, color = Color.White.copy(alpha = 0.7f), textAlign = TextAlign.Center)
-                        Spacer(modifier = Modifier.height(16.dp))
-                        CircularProgressIndicator(color = Color.White, strokeWidth = 3.dp)
-                    }
-                    matchedDoctor == null && !isSearchingDoctor -> {
-                        // No doctor found
-                        Icon(Icons.Default.PersonOff, contentDescription = null, tint = StatusAlertText, modifier = Modifier.size(64.dp))
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text("No Doctor Available", style = MaterialTheme.typography.headlineSmall, color = Color.White)
-                        Text("No doctors speaking $selectedLanguage are available right now. Please try again later.", style = MaterialTheme.typography.bodyMedium, color = Color.White.copy(alpha = 0.7f), textAlign = TextAlign.Center)
-                        Spacer(modifier = Modifier.height(24.dp))
-                        LargeButton(text = "Go Back", onClick = { viewModel.resetCallState(); onBack() }, color = HealthWorkerColor)
-                    }
-                    isConnecting -> {
-                        // Doctor found, connecting
-                        DoctorAvatarImage(doctorName = matchedDoctor!!.name, modifier = Modifier.size(120.dp).scale(pulseScale))
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            if (isPhoneCall) "Calling..." else "Connecting...",
-                            style = MaterialTheme.typography.headlineMedium,
-                            color = Color.White
-                        )
-                        Text(matchedDoctor!!.name, style = MaterialTheme.typography.titleMedium, color = Color.White.copy(alpha = 0.9f))
-                        Text("${matchedDoctor!!.specialty} • ${matchedDoctor!!.qualification}", style = MaterialTheme.typography.bodyMedium, color = Color.White.copy(alpha = 0.6f))
-                        Text("Languages: ${matchedDoctor!!.languages.joinToString(", ")}", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.5f))
-                        Spacer(modifier = Modifier.height(16.dp))
-                        CircularProgressIndicator(color = Color.White, strokeWidth = 3.dp)
-                    }
-                    isCallActive -> {
-                        // Active call
-                        if (selectedCallPatient != null) {
-                            // Patient info chip at top
-                            Surface(
-                                shape = RoundedCornerShape(24.dp),
-                                color = Color.White.copy(alpha = 0.12f)
-                            ) {
-                                Row(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    Icon(Icons.Default.Person, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
-                                    Text("Patient: ${selectedCallPatient!!.fullName}", style = MaterialTheme.typography.labelMedium, color = Color.White)
-                                }
+                // ── Top bar: call type icons side-by-side + patient info (minimized) ──
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color.White.copy(alpha = 0.08f))
+                        .padding(horizontal = 16.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    // Left: call type icons side by side
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        // Video call icon
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = if (!isPhoneCall && isCallActive) DoctorColor else Color.White.copy(alpha = 0.12f),
+                            modifier = Modifier.size(36.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(Icons.Default.Videocam, contentDescription = "Video", tint = Color.White, modifier = Modifier.size(20.dp))
                             }
                         }
-
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        if (isPhoneCall) {
-                            // Phone call UI
-                            DoctorAvatarImage(doctorName = matchedDoctor!!.name, modifier = Modifier.size(120.dp))
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(matchedDoctor!!.name, style = MaterialTheme.typography.headlineMedium, color = Color.White)
-                            Text("${matchedDoctor!!.specialty}", style = MaterialTheme.typography.bodyMedium, color = Color.White.copy(alpha = 0.7f))
-                            Spacer(modifier = Modifier.height(4.dp))
-
-                            Surface(shape = RoundedCornerShape(20.dp), color = CallAcceptGreen.copy(alpha = 0.3f)) {
-                                Row(modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                    Icon(Icons.Default.Phone, contentDescription = null, tint = CallAcceptGreen, modifier = Modifier.size(16.dp))
-                                    Text("Phone Call Active • $durationText", style = MaterialTheme.typography.labelMedium, color = CallAcceptGreen)
-                                }
+                        // Phone call icon
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = if (isPhoneCall && isCallActive) CallAcceptGreen else Color.White.copy(alpha = 0.12f),
+                            modifier = Modifier.size(36.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(Icons.Default.Phone, contentDescription = "Phone", tint = Color.White, modifier = Modifier.size(20.dp))
                             }
+                        }
+                    }
 
-                            Spacer(modifier = Modifier.height(8.dp))
+                    // Center: patient name (if available)
+                    if (selectedCallPatient != null) {
+                        Text(
+                            selectedCallPatient!!.fullName,
+                            style = MaterialTheme.typography.titleSmall,
+                            color = Color.White,
+                            maxLines = 1
+                        )
+                    }
 
-                            // Sound wave indicator
-                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
-                                repeat(5) { i ->
-                                    val height by infiniteTransition.animateFloat(
-                                        initialValue = 12f,
-                                        targetValue = 36f,
-                                        animationSpec = infiniteRepeatable(
-                                            animation = tween(400 + i * 100, easing = FastOutSlowInEasing),
-                                            repeatMode = RepeatMode.Reverse
-                                        ),
-                                        label = "wave$i"
-                                    )
-                                    Box(
-                                        modifier = Modifier
-                                            .width(6.dp)
-                                            .height(height.dp)
-                                            .clip(RoundedCornerShape(3.dp))
-                                            .background(CallAcceptGreen.copy(alpha = 0.6f))
-                                    )
-                                }
+                    // Right: duration or status
+                    Surface(shape = RoundedCornerShape(12.dp), color = Color.White.copy(alpha = 0.12f)) {
+                        Text(
+                            if (isCallActive) durationText else callStatus.replace("_", " ").replaceFirstChar { it.uppercase() },
+                            style = MaterialTheme.typography.labelMedium,
+                            color = Color.White,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                        )
+                    }
+                }
+
+                // ── Call status indicator bar ──
+                if (callStatus.isNotEmpty() && !isCallActive) {
+                    val (statusText, statusColor, statusBg) = when (callStatus) {
+                        "searching" -> Triple("Searching for available doctor...", Color.White, Color.White.copy(alpha = 0.1f))
+                        "doctor_busy" -> Triple("Doctor is busy, finding another...", StatusBusyText, StatusBusyBg.copy(alpha = 0.3f))
+                        "no_doctor" -> Triple("No doctor available", StatusAlertText, StatusAlertBg.copy(alpha = 0.3f))
+                        "ringing" -> Triple("Ringing doctor...", CallAcceptGreen, CallAcceptGreen.copy(alpha = 0.15f))
+                        else -> Triple(callStatus, Color.White, Color.Transparent)
+                    }
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        color = statusBg
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            when (callStatus) {
+                                "doctor_busy" -> Icon(Icons.Default.DoNotDisturb, contentDescription = null, tint = statusColor, modifier = Modifier.size(18.dp))
+                                "no_doctor" -> Icon(Icons.Default.PersonOff, contentDescription = null, tint = statusColor, modifier = Modifier.size(18.dp))
+                                "ringing" -> Icon(Icons.Default.RingVolume, contentDescription = null, tint = statusColor, modifier = Modifier.size(18.dp))
+                                else -> CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Color.White, strokeWidth = 2.dp)
                             }
-                        } else {
-                            // Video call UI
-                            DoctorAvatarImage(doctorName = matchedDoctor!!.name, modifier = Modifier.size(100.dp))
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(matchedDoctor!!.name, style = MaterialTheme.typography.titleLarge, color = Color.White)
-                            Text("${matchedDoctor!!.specialty}", style = MaterialTheme.typography.bodyMedium, color = Color.White.copy(alpha = 0.7f))
+                            Text(statusText, style = MaterialTheme.typography.bodySmall, color = statusColor)
+                        }
+                    }
+                }
 
-                            Surface(shape = RoundedCornerShape(20.dp), color = DoctorColor.copy(alpha = 0.3f)) {
-                                Row(modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                    Icon(Icons.Default.Videocam, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
-                                    Text("Video Call • $durationText", style = MaterialTheme.typography.labelMedium, color = Color.White)
-                                }
+                // ── Main content area ──
+                Box(
+                    modifier = Modifier.weight(1f).fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier.padding(24.dp)
+                    ) {
+                        when {
+                            callStatus == "searching" || (isSearchingDoctor && callStatus != "doctor_busy") -> {
+                                Icon(Icons.Default.Search, contentDescription = null, tint = Color.White.copy(alpha = 0.5f), modifier = Modifier.size(64.dp))
+                                Text("Finding a doctor...", style = MaterialTheme.typography.headlineSmall, color = Color.White)
+                                Text("Looking for doctors who speak $selectedLanguage", style = MaterialTheme.typography.bodyMedium, color = Color.White.copy(alpha = 0.7f), textAlign = TextAlign.Center)
+                                CircularProgressIndicator(color = Color.White, strokeWidth = 3.dp)
                             }
-
-                            Spacer(modifier = Modifier.height(8.dp))
-
-                            // Mock video area
-                            Surface(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(200.dp),
-                                shape = RoundedCornerShape(16.dp),
-                                color = HeaderNavyLighter
-                            ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                        DoctorAvatarImage(doctorName = matchedDoctor!!.name, modifier = Modifier.size(72.dp))
-                                        Spacer(modifier = Modifier.height(8.dp))
-                                        Text("Video Call Active", color = Color.White.copy(alpha = 0.7f), style = MaterialTheme.typography.bodyMedium)
+                            callStatus == "doctor_busy" -> {
+                                Icon(Icons.Default.DoNotDisturb, contentDescription = null, tint = StatusBusyText, modifier = Modifier.size(64.dp))
+                                Text("Doctor Busy", style = MaterialTheme.typography.headlineSmall, color = Color.White)
+                                Text("The matched doctor is currently busy. Searching for another available doctor...", style = MaterialTheme.typography.bodyMedium, color = Color.White.copy(alpha = 0.7f), textAlign = TextAlign.Center)
+                                CircularProgressIndicator(color = StatusBusyText, strokeWidth = 3.dp)
+                            }
+                            callStatus == "no_doctor" -> {
+                                Icon(Icons.Default.PersonOff, contentDescription = null, tint = StatusAlertText, modifier = Modifier.size(64.dp))
+                                Text("No Doctor Available", style = MaterialTheme.typography.headlineSmall, color = Color.White)
+                                Text("No doctors speaking $selectedLanguage are available right now. Please try again later.", style = MaterialTheme.typography.bodyMedium, color = Color.White.copy(alpha = 0.7f), textAlign = TextAlign.Center)
+                                Spacer(modifier = Modifier.height(16.dp))
+                                LargeButton(text = "Go Back", onClick = { viewModel.resetCallState(); onBack() }, color = HealthWorkerColor)
+                            }
+                            isConnecting || callStatus == "ringing" -> {
+                                DoctorAvatarImage(doctorName = matchedDoctor!!.name, modifier = Modifier.size(120.dp).scale(pulseScale))
+                                Text(
+                                    if (isPhoneCall) "Calling..." else "Connecting...",
+                                    style = MaterialTheme.typography.headlineMedium, color = Color.White
+                                )
+                                Text(matchedDoctor!!.name, style = MaterialTheme.typography.titleMedium, color = Color.White.copy(alpha = 0.9f))
+                                Text("${matchedDoctor!!.specialty} • ${matchedDoctor!!.qualification}", style = MaterialTheme.typography.bodyMedium, color = Color.White.copy(alpha = 0.6f))
+                                Text("Languages: ${matchedDoctor!!.languages.joinToString(", ")}", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.5f))
+                                CircularProgressIndicator(color = Color.White, strokeWidth = 3.dp)
+                            }
+                            isCallActive -> {
+                                if (isPhoneCall) {
+                                    DoctorAvatarImage(doctorName = matchedDoctor!!.name, modifier = Modifier.size(100.dp))
+                                    Text(matchedDoctor!!.name, style = MaterialTheme.typography.headlineMedium, color = Color.White)
+                                    Text(matchedDoctor!!.specialty, style = MaterialTheme.typography.bodyMedium, color = Color.White.copy(alpha = 0.7f))
+                                    Surface(shape = RoundedCornerShape(20.dp), color = CallAcceptGreen.copy(alpha = 0.3f)) {
+                                        Row(modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                            Icon(Icons.Default.Phone, contentDescription = null, tint = CallAcceptGreen, modifier = Modifier.size(16.dp))
+                                            Text("Phone Call Active • $durationText", style = MaterialTheme.typography.labelMedium, color = CallAcceptGreen)
+                                        }
                                     }
-                                }
-
-                                // Self-view mini
-                                Box(modifier = Modifier.fillMaxSize().padding(12.dp), contentAlignment = Alignment.BottomEnd) {
-                                    Surface(
-                                        modifier = Modifier.size(width = 80.dp, height = 100.dp),
-                                        shape = RoundedCornerShape(8.dp),
-                                        color = Color.DarkGray
-                                    ) {
+                                    // Sound waves
+                                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+                                        repeat(5) { i ->
+                                            val height by infiniteTransition.animateFloat(
+                                                initialValue = 12f, targetValue = 36f,
+                                                animationSpec = infiniteRepeatable(animation = tween(400 + i * 100, easing = FastOutSlowInEasing), repeatMode = RepeatMode.Reverse),
+                                                label = "wave$i"
+                                            )
+                                            Box(modifier = Modifier.width(6.dp).height(height.dp).clip(RoundedCornerShape(3.dp)).background(CallAcceptGreen.copy(alpha = 0.6f)))
+                                        }
+                                    }
+                                } else {
+                                    DoctorAvatarImage(doctorName = matchedDoctor!!.name, modifier = Modifier.size(80.dp))
+                                    Text(matchedDoctor!!.name, style = MaterialTheme.typography.titleLarge, color = Color.White)
+                                    Surface(shape = RoundedCornerShape(20.dp), color = DoctorColor.copy(alpha = 0.3f)) {
+                                        Row(modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                            Icon(Icons.Default.Videocam, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                                            Text("Video Call • $durationText", style = MaterialTheme.typography.labelMedium, color = Color.White)
+                                        }
+                                    }
+                                    // Mock video area
+                                    Surface(modifier = Modifier.fillMaxWidth().height(180.dp), shape = RoundedCornerShape(16.dp), color = HeaderNavyLighter) {
                                         Box(contentAlignment = Alignment.Center) {
-                                            Icon(Icons.Default.Person, contentDescription = null, tint = Color.White.copy(alpha = 0.5f), modifier = Modifier.size(32.dp))
+                                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                                DoctorAvatarImage(doctorName = matchedDoctor!!.name, modifier = Modifier.size(64.dp))
+                                                Spacer(modifier = Modifier.height(4.dp))
+                                                Text("Video Call Active", color = Color.White.copy(alpha = 0.7f), style = MaterialTheme.typography.bodySmall)
+                                            }
+                                        }
+                                        Box(modifier = Modifier.fillMaxSize().padding(8.dp), contentAlignment = Alignment.BottomEnd) {
+                                            Surface(modifier = Modifier.size(width = 70.dp, height = 90.dp), shape = RoundedCornerShape(8.dp), color = Color.DarkGray) {
+                                                Box(contentAlignment = Alignment.Center) {
+                                                    Icon(Icons.Default.Person, contentDescription = null, tint = Color.White.copy(alpha = 0.5f), modifier = Modifier.size(28.dp))
+                                                }
+                                            }
                                         }
                                     }
                                 }
                             }
                         }
+                    }
+                }
 
-                        Spacer(modifier = Modifier.height(24.dp))
-
-                        // Call controls
-                        Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
-                            // Mute
-                            FilledIconButton(
-                                onClick = { },
-                                modifier = Modifier.size(56.dp),
-                                colors = IconButtonDefaults.filledIconButtonColors(containerColor = Color.White.copy(alpha = 0.15f))
-                            ) {
-                                Icon(Icons.Default.MicOff, contentDescription = "Mute", tint = Color.White)
-                            }
-
-                            // End call
-                            FilledIconButton(
-                                onClick = {
-                                    viewModel.endCall()
-                                    onCallEnded()
-                                },
-                                modifier = Modifier.size(56.dp),
-                                colors = IconButtonDefaults.filledIconButtonColors(containerColor = CallDeclineRed)
-                            ) {
-                                Icon(Icons.Default.CallEnd, contentDescription = "End Call", tint = Color.White)
-                            }
-
-                            if (!isPhoneCall) {
-                                // Camera toggle (only for video)
-                                FilledIconButton(
-                                    onClick = { },
-                                    modifier = Modifier.size(56.dp),
-                                    colors = IconButtonDefaults.filledIconButtonColors(containerColor = Color.White.copy(alpha = 0.15f))
-                                ) {
-                                    Icon(Icons.Default.VideocamOff, contentDescription = null, tint = Color.White)
-                                }
-                            } else {
-                                // Speaker toggle (for phone)
-                                FilledIconButton(
-                                    onClick = { },
-                                    modifier = Modifier.size(56.dp),
-                                    colors = IconButtonDefaults.filledIconButtonColors(containerColor = Color.White.copy(alpha = 0.15f))
-                                ) {
-                                    Icon(Icons.Default.VolumeUp, contentDescription = "Speaker", tint = Color.White)
-                                }
-                            }
+                // ── Bottom call controls ──
+                if (isCallActive) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().background(Color.White.copy(alpha = 0.06f)).padding(vertical = 16.dp),
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        FilledIconButton(onClick = { }, modifier = Modifier.size(56.dp), colors = IconButtonDefaults.filledIconButtonColors(containerColor = Color.White.copy(alpha = 0.15f))) {
+                            Icon(Icons.Default.MicOff, contentDescription = "Mute", tint = Color.White)
+                        }
+                        FilledIconButton(onClick = { viewModel.endCall(); onCallEnded() }, modifier = Modifier.size(64.dp), colors = IconButtonDefaults.filledIconButtonColors(containerColor = CallDeclineRed)) {
+                            Icon(Icons.Default.CallEnd, contentDescription = "End Call", tint = Color.White, modifier = Modifier.size(28.dp))
+                        }
+                        FilledIconButton(onClick = { }, modifier = Modifier.size(56.dp), colors = IconButtonDefaults.filledIconButtonColors(containerColor = Color.White.copy(alpha = 0.15f))) {
+                            Icon(if (isPhoneCall) Icons.Default.VolumeUp else Icons.Default.VideocamOff, contentDescription = null, tint = Color.White)
                         }
                     }
                 }

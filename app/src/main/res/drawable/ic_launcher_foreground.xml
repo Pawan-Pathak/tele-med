@@ -4,31 +4,33 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Cross/Hospital icon - centered in the safe zone (18-90) -->
-    <!-- Outer circle -->
+    <!-- Outer circle (white ring) -->
     <path
         android:fillColor="#FFFFFF"
         android:fillAlpha="0.95"
-        android:pathData="M54,54m-26,0a26,26 0,1 1,52 0a26,26 0,1 1,-52 0" />
-    <!-- Medical cross - horizontal bar -->
+        android:pathData="M54,54m-28,0a28,28 0,1 1,56 0a28,28 0,1 1,-56 0" />
+    <!-- Inner circle (red) -->
     <path
-        android:fillColor="#C05A1F"
-        android:pathData="M40,50h28v8H40z" />
-    <!-- Medical cross - vertical bar -->
-    <path
-        android:fillColor="#C05A1F"
-        android:pathData="M50,40h8v28H50z" />
-    <!-- Small signal waves (telemedicine indicator) -->
+        android:fillColor="#CE2227"
+        android:pathData="M54,54m-22,0a22,22 0,1 1,44 0a22,22 0,1 1,-44 0" />
+    <!-- Helping hand icon - palm -->
     <path
         android:fillColor="#FFFFFF"
-        android:fillAlpha="0.6"
-        android:pathData="M72,38 Q76,42 76,48"
-        android:strokeWidth="2"
-        android:strokeColor="#FFFFFF"
-        android:strokeAlpha="0.6" />
+        android:pathData="M48,62 L48,48 C48,46 49,45 51,45 C53,45 54,46 54,48 L54,52 L54,44 C54,42 55,41 57,41 C59,41 60,42 60,44 L60,51 L60,46 C60,44 61,43 63,43 C65,43 66,44 66,46 L66,56 C66,62 62,66 56,66 L52,66 C49,66 48,65 48,62 Z" />
+    <!-- Heart above hand -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,42 C54,39 51,37 49,39 C47,41 49,44 54,47 C59,44 61,41 59,39 C57,37 54,39 54,42 Z" />
+    <!-- Signal waves (telemedicine) -->
     <path
         android:fillColor="#00000000"
-        android:pathData="M76,35 Q82,42 82,50"
+        android:pathData="M70,40 Q74,44 74,50"
+        android:strokeWidth="2"
+        android:strokeColor="#FFFFFF"
+        android:strokeAlpha="0.7" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M74,37 Q80,44 80,52"
         android:strokeWidth="2"
         android:strokeColor="#FFFFFF"
         android:strokeAlpha="0.4" />

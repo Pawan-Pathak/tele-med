@@ -324,7 +324,38 @@ fun DoctorQueueScreen(
                                     StatusBadge(item.status)
                                 }
 
-                                Spacer(modifier = Modifier.height(8.dp))
+                                Spacer(modifier = Modifier.height(4.dp))
+
+                                // Waiting time and HW name row
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    // Waiting time
+                                    Surface(
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = StatusAwaitingBg
+                                    ) {
+                                        Row(modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                            Icon(Icons.Default.Schedule, contentDescription = null, tint = StatusAwaitingText, modifier = Modifier.size(14.dp))
+                                            Text("Waiting: ${item.time}", style = MaterialTheme.typography.labelSmall, color = StatusAwaitingText)
+                                        }
+                                    }
+                                    // HW name
+                                    if (item.patient.registeredBy.isNotEmpty()) {
+                                        Surface(
+                                            shape = RoundedCornerShape(8.dp),
+                                            color = HealthWorkerBg
+                                        ) {
+                                            Row(modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                                Icon(Icons.Default.Person, contentDescription = null, tint = HealthWorkerColor, modifier = Modifier.size(14.dp))
+                                                Text("HW: ${item.patient.registeredBy}", style = MaterialTheme.typography.labelSmall, color = HealthWorkerColor)
+                                            }
+                                        }
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(4.dp))
 
                                 // Vitals summary row
                                 item.patient.vitals.let { v ->
@@ -963,6 +994,38 @@ fun DoctorPrescriptionPreviewScreen(
                                     Column(modifier = Modifier.weight(1f)) {
                                         Text("Message (SMS)", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold), color = Color(0xFF1A73E8))
                                         Text("Send prescription summary via text message", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+                                    }
+                                    Icon(Icons.Default.ChevronRight, contentDescription = null, tint = TextMuted)
+                                }
+                            }
+
+                            // MMS
+                            Card(
+                                onClick = {
+                                    showShareOptions = false
+                                    shareConfirmMessage = "Prescription shared via MMS successfully!"
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF0E0))
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(16.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    Surface(
+                                        shape = CircleShape,
+                                        color = Color(0xFFD4770B),
+                                        modifier = Modifier.size(40.dp)
+                                    ) {
+                                        Box(contentAlignment = Alignment.Center) {
+                                            Icon(Icons.Default.Mms, contentDescription = null, tint = Color.White, modifier = Modifier.size(22.dp))
+                                        }
+                                    }
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text("MMS", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold), color = Color(0xFFD4770B))
+                                        Text("Send prescription as picture message", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
                                     }
                                     Icon(Icons.Default.ChevronRight, contentDescription = null, tint = TextMuted)
                                 }

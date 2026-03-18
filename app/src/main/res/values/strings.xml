@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">TeleMed Demo</string>
+    <string name="app_name">HelpAge TeleMed</string>
 
     <!-- Role Selection -->
     <string name="select_role">Select Your Role</string>
@@ -163,4 +163,15 @@
     <!-- Share Options -->
     <string name="share_via_whatsapp">Share via WhatsApp</string>
     <string name="share_via_message">Share via Message</string>
+    <string name="share_via_mms">Share via MMS</string>
+
+    <!-- Dispensation -->
+    <string name="not_dispensed">Not Dispensed</string>
+    <string name="partial_dispensation">Partially Dispensed</string>
+    <string name="fully_dispensed">Fully Dispensed</string>
+
+    <!-- Call Status -->
+    <string name="doctor_busy">Doctor Busy</string>
+    <string name="no_doctor_available">No Doctor Available</string>
+    <string name="ringing_doctor">Ringing Doctor</string>
 </resources>
