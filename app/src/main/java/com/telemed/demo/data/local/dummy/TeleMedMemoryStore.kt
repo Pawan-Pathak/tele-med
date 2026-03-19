@@ -35,13 +35,16 @@ class TeleMedMemoryStore {
     )
     val states = listOf("Madhya Pradesh", "Uttar Pradesh", "Rajasthan", "Maharashtra", "Gujarat")
 
-    // Pre-seeded doctors – all General Physicians for this system
+    // Pre-seeded doctors with varied specialties
     val doctors = listOf(
         Doctor("d1", "Dr. Priya Sharma", "MBBS, MD", "General Physician", "PHC Berasia", "MP-MED-1234", 3, true, "Bhopal", listOf("Hindi", "English")),
         Doctor("d2", "Dr. Amit Verma", "MBBS, MD", "General Physician", "CHC Sehore", "MP-MED-2345", 4, true, "Sehore", listOf("Hindi", "English", "Marathi")),
         Doctor("d3", "Dr. Sunita Patel", "MBBS, MD", "General Physician", "PHC Sanwer", "MP-MED-3456", 5, true, "Indore", listOf("Hindi", "Gujarati")),
         Doctor("d4", "Dr. Rajesh Gupta", "MBBS, MD", "General Physician", "DH Jabalpur", "MP-MED-4567", 4, true, "Jabalpur", listOf("Hindi", "English")),
-        Doctor("d5", "Dr. Meera Joshi", "MBBS, MD", "General Physician", "PHC Gwalior", "MP-MED-5678", 5, true, "Gwalior", listOf("Hindi", "English", "Urdu"))
+        Doctor("d5", "Dr. Meera Joshi", "MBBS, MD", "General Physician", "PHC Gwalior", "MP-MED-5678", 5, true, "Gwalior", listOf("Hindi", "English", "Urdu")),
+        Doctor("d6", "Dr. Kavita Reddy", "MBBS, MD (Pediatrics)", "Pediatrician", "CHC Berasia", "MP-MED-6789", 3, true, "Bhopal", listOf("Hindi", "English")),
+        Doctor("d7", "Dr. Sunil Tiwari", "MBBS, MS (Ortho)", "Orthopedic Surgeon", "DH Bhopal", "MP-MED-7890", 6, false, "Bhopal", listOf("Hindi", "English")),
+        Doctor("d8", "Dr. Fatima Khan", "MBBS, DGO", "Gynecologist", "PHC Phanda", "MP-MED-8901", 4, true, "Bhopal", listOf("Hindi", "Urdu", "English"))
     )
 
     // Default health worker for demo
@@ -84,6 +87,11 @@ class TeleMedMemoryStore {
                     listOf("Diabetes", "Hypertension"),
                     LifestyleHistory(false, true, false)
                 ),
+                documents = listOf(
+                    DocumentFile("Blood_Report_March2026.pdf", "report"),
+                    DocumentFile("Previous_Prescription.pdf", "report"),
+                    DocumentFile("Chest_Xray_2025.jpg", "diagnostic")
+                ),
                 registeredBy = "Spoke Berasia",
                 registeredAt = now.minusHours(2).format(formatter),
                 status = ConsultationStatus.WAITING,
@@ -106,6 +114,9 @@ class TeleMedMemoryStore {
                     listOf("None"),
                     LifestyleHistory()
                 ),
+                documents = listOf(
+                    DocumentFile("Hemoglobin_Test.pdf", "report")
+                ),
                 registeredBy = "Spoke Berasia",
                 registeredAt = now.minusHours(1).format(formatter),
                 status = ConsultationStatus.WAITING,
@@ -127,6 +138,11 @@ class TeleMedMemoryStore {
                     listOf("Pain", "Breathlessness"),
                     listOf("Diabetes", "Heart Disease"),
                     LifestyleHistory(true, true, false)
+                ),
+                documents = listOf(
+                    DocumentFile("ECG_Report.pdf", "diagnostic"),
+                    DocumentFile("Lipid_Profile.pdf", "report"),
+                    DocumentFile("Echo_Report_2025.pdf", "diagnostic")
                 ),
                 registeredBy = "Spoke Berasia",
                 registeredAt = now.minusMinutes(45).format(formatter),
@@ -171,6 +187,10 @@ class TeleMedMemoryStore {
                     listOf("Hypertension"),
                     LifestyleHistory(false, false, false)
                 ),
+                documents = listOf(
+                    DocumentFile("Knee_Xray.jpg", "diagnostic"),
+                    DocumentFile("Uric_Acid_Report.pdf", "report")
+                ),
                 registeredBy = "Spoke Berasia",
                 registeredAt = now.minusMinutes(15).format(formatter),
                 status = ConsultationStatus.COMPLETED,
@@ -192,6 +212,10 @@ class TeleMedMemoryStore {
                     listOf("Fever", "Cough", "Breathlessness"),
                     listOf("TB"),
                     LifestyleHistory()
+                ),
+                documents = listOf(
+                    DocumentFile("Sputum_Test.pdf", "report"),
+                    DocumentFile("Chest_Xray_March.jpg", "diagnostic")
                 ),
                 registeredBy = "Spoke Berasia",
                 registeredAt = now.minusDays(1).format(formatter),
@@ -215,11 +239,89 @@ class TeleMedMemoryStore {
                     listOf("Diabetes"),
                     LifestyleHistory(true, false, false)
                 ),
+                documents = listOf(
+                    DocumentFile("HbA1c_Report.pdf", "report"),
+                    DocumentFile("RFT_Report.pdf", "report")
+                ),
                 registeredBy = "Spoke Berasia",
                 registeredAt = now.minusDays(1).format(formatter),
                 status = ConsultationStatus.COMPLETED,
                 consentGiven = true
-            )
+            ),
+            // Patient with declined consent (showcases declined state)
+            Patient(
+                id = "ASHA-20260316-0008",
+                fullName = "Sita Ram Yadav",
+                guardianName = "Durga Prasad Yadav",
+                gender = Gender.FEMALE,
+                age = 65,
+                dob = "1961-04-18",
+                mobile = "9876543217",
+                aadhaar = "XXXX-XXXX-8901",
+                address = Address("Ratibad", "Bhopal", "Madhya Pradesh"),
+                vitals = Vitals(70f, 99.0f, "F", 138, 88, 165f, 12.0f, 96, 74),
+                medicalHistory = MedicalHistory(
+                    "Back pain and difficulty walking",
+                    listOf("Pain", "Fatigue"),
+                    listOf("Hypertension", "Diabetes"),
+                    LifestyleHistory(false, false, false)
+                ),
+                registeredBy = "Spoke Berasia",
+                registeredAt = now.minusMinutes(20).format(formatter),
+                status = ConsultationStatus.DECLINED,
+                consentGiven = false
+            ),
+            // Patient waiting with complete data (for doctor queue demo)
+            Patient(
+                id = "ASHA-20260316-0009",
+                fullName = "Priya Patel",
+                guardianName = "Vikram Patel",
+                gender = Gender.FEMALE,
+                age = 24,
+                dob = "2002-06-15",
+                mobile = "9876543218",
+                aadhaar = "XXXX-XXXX-9012",
+                address = Address("Misrod", "Bhopal", "Madhya Pradesh"),
+                vitals = Vitals(55f, 100.8f, "F", 108, 68, 92f, 11.0f, 98, 90),
+                medicalHistory = MedicalHistory(
+                    "Sore throat and difficulty swallowing for 2 days",
+                    listOf("Fever", "Pain"),
+                    listOf("None"),
+                    LifestyleHistory()
+                ),
+                documents = listOf(
+                    DocumentFile("Throat_Culture_Report.pdf", "report")
+                ),
+                registeredBy = "Spoke Berasia",
+                registeredAt = now.minusMinutes(10).format(formatter),
+                status = ConsultationStatus.WAITING,
+                consentGiven = true
+            ),
+            // Patient registered today, consent pending (for health worker consent flow)
+            Patient(
+                id = "ASHA-20260316-0010",
+                fullName = "Raju Verma",
+                guardianName = "Shyam Verma",
+                gender = Gender.MALE,
+                age = 38,
+                dob = "1988-11-25",
+                mobile = "9876543219",
+                aadhaar = "XXXX-XXXX-0123",
+                address = Address("Sukhi Sewania", "Bhopal", "Madhya Pradesh"),
+                vitals = Vitals(78f, 99.4f, "F", 125, 82, 105f, 14.2f, 97, 76),
+                medicalHistory = MedicalHistory(
+                    "Stomach pain and acidity after meals",
+                    listOf("Pain"),
+                    listOf("None"),
+                    LifestyleHistory(true, true, false)
+                ),
+                documents = listOf(
+                    DocumentFile("Endoscopy_Report_2025.pdf", "diagnostic")
+                ),
+                registeredBy = "Spoke Berasia",
+                registeredAt = now.minusMinutes(5).format(formatter),
+                status = ConsultationStatus.REGISTERED
+            )  // consent not yet asked
         ))
 
         // Build patient queue from today's patients
@@ -227,9 +329,34 @@ class TeleMedMemoryStore {
             patientQueue.add(PatientQueueItem(p, p.registeredAt, p.status))
         }
 
-        // Pre-seed a prescription for demo (as if doctor already consulted Ramesh Kumar)
+        // Pre-seed all demo data for complete offline experience
         connectedDoctor = doctors.first()
+        seedDemoConsultation()
         seedDemoPrescription()
+        seedDemoDispensing()
+    }
+
+    // Pre-seed doctor consultation form (shows pre-filled consultation for demo)
+    private fun seedDemoConsultation() {
+        val patient = patients.first() // Ramesh Kumar
+        doctorConsultationForm = DoctorConsultationForm(
+            chiefComplaints = patient.medicalHistory.primaryComplaint,
+            diagnosis = "Acute upper respiratory infection with underlying uncontrolled hypertension",
+            icdCode = "J06.9",
+            medicines = listOf(
+                Medicine("Paracetamol", "650mg", MedicineFrequency(morning = true, afternoon = true, night = true), 5, "Take after food"),
+                Medicine("Amoxicillin", "500mg", MedicineFrequency(morning = true, afternoon = false, night = true), 7, "Take with water"),
+                Medicine("Cetirizine", "10mg", MedicineFrequency(morning = false, afternoon = false, night = true), 5, "Take at bedtime"),
+                Medicine("Amlodipine", "5mg", MedicineFrequency(morning = true, afternoon = false, night = false), 30, "Continue daily for BP"),
+                Medicine("Omeprazole", "20mg", MedicineFrequency(morning = true, afternoon = false, night = false), 7, "Take on empty stomach")
+            ),
+            labTests = listOf("CBC (Complete Blood Count)", "X-Ray Chest", "Blood Sugar (Fasting/PP)"),
+            imagingNotes = "PA view chest X-ray advised to rule out lower respiratory tract infection",
+            procedures = "Nebulization with Salbutamol if wheezing persists",
+            allergies = "Sulfonamides",
+            recommendations = "Rest for 3-5 days. Drink plenty of warm fluids. Monitor BP daily. Follow up after 7 days.",
+            referral = Referral(true, "Cardiology", "Uncontrolled hypertension despite medication. Needs specialist evaluation for BP management and cardiac risk assessment.")
+        )
     }
 
     private fun seedDemoPrescription() {
@@ -256,12 +383,21 @@ class TeleMedMemoryStore {
                 Medicine("Omeprazole", "20mg", MedicineFrequency(morning = true, afternoon = false, night = false), 7, "Take on empty stomach")
             ),
             labTests = listOf("CBC (Complete Blood Count)", "X-Ray Chest", "Blood Sugar (Fasting/PP)"),
-            referral = null,
+            referral = Referral(true, "Cardiology", "Uncontrolled hypertension despite medication. Needs specialist evaluation for BP management and cardiac risk assessment."),
             recommendations = "Rest for 3-5 days. Drink plenty of warm fluids. Monitor BP daily. Follow up after 7 days.",
             allergies = "Sulfonamides",
-            procedures = "",
+            procedures = "Nebulization with Salbutamol if wheezing persists",
             imagingNotes = "PA view chest X-ray advised to rule out lower respiratory tract infection"
         )
+    }
+
+    // Pre-seed dispensing status (partial dispensing for demo)
+    private fun seedDemoDispensing() {
+        dispensedMedicines["Paracetamol"] = true
+        dispensedMedicines["Amoxicillin"] = true
+        dispensedMedicines["Cetirizine"] = false
+        dispensedMedicines["Amlodipine"] = false
+        dispensedMedicines["Omeprazole"] = false
     }
 
     // Mock drug list (30 common medicines)
