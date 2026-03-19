@@ -285,139 +285,33 @@ fun DoctorQueueScreen(
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(Icons.Default.People, contentDescription = null, modifier = Modifier.size(64.dp), tint = TextSecondary)
                         Spacer(modifier = Modifier.height(8.dp))
-                        Text("No patients waiting", style = MaterialTheme.typography.bodyLarge, color = TextSecondary)
+                        Text("No patients waiting for consultation", style = MaterialTheme.typography.bodyLarge, color = TextSecondary)
                     }
                 }
             } else {
                 LazyColumn(
-                    modifier = Modifier.padding(horizontal = responsiveHorizontalPadding(), vertical = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    modifier = Modifier.padding(horizontal = responsiveHorizontalPadding()),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                    contentPadding = PaddingValues(top = 12.dp, bottom = 16.dp)
                 ) {
-                    items(queue) { item ->
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(16.dp),
-                            colors = CardDefaults.cardColors(containerColor = BackgroundCard),
-                            elevation = CardDefaults.cardElevation(2.dp)
-                        ) {
-                            Column(modifier = Modifier.padding(16.dp)) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    // Avatar
-                                    Surface(
-                                        shape = CircleShape,
-                                        color = DoctorBg,
-                                        modifier = Modifier.size(44.dp)
-                                    ) {
-                                        Box(contentAlignment = Alignment.Center) {
-                                            Text(
-                                                item.patient.fullName.take(2).uppercase(),
-                                                style = MaterialTheme.typography.labelSmall,
-                                                fontWeight = FontWeight.Bold,
-                                                color = DoctorColor
-                                            )
-                                        }
-                                    }
-                                    Spacer(modifier = Modifier.width(12.dp))
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text(item.patient.fullName, style = MaterialTheme.typography.titleMedium, color = TextPrimary)
-                                        Text("${item.patient.id} • ${item.patient.age}y ${item.patient.gender.name}", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
-                                    }
-                                    StatusBadge(item.status)
-                                }
-
-                                Spacer(modifier = Modifier.height(4.dp))
-
-                                // Waiting time and HW name row
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                                ) {
-                                    // Waiting time
-                                    Surface(
-                                        shape = RoundedCornerShape(8.dp),
-                                        color = StatusAwaitingBg
-                                    ) {
-                                        Row(modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                            Icon(Icons.Default.Schedule, contentDescription = null, tint = StatusAwaitingText, modifier = Modifier.size(14.dp))
-                                            Text("Waiting: ${item.time}", style = MaterialTheme.typography.labelSmall, color = StatusAwaitingText)
-                                        }
-                                    }
-                                    // HW name
-                                    if (item.patient.registeredBy.isNotEmpty()) {
-                                        Surface(
-                                            shape = RoundedCornerShape(8.dp),
-                                            color = HealthWorkerBg
-                                        ) {
-                                            Row(modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                                Icon(Icons.Default.Person, contentDescription = null, tint = HealthWorkerColor, modifier = Modifier.size(14.dp))
-                                                Text("HW: ${item.patient.registeredBy}", style = MaterialTheme.typography.labelSmall, color = HealthWorkerColor)
-                                            }
-                                        }
-                                    }
-                                    ConsentBadge(consentGiven = item.patient.consentGiven)
-                                }
-
-                                Spacer(modifier = Modifier.height(4.dp))
-
-                                // Vitals summary row
-                                item.patient.vitals.let { v ->
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .background(BackgroundPage, RoundedCornerShape(8.dp))
-                                            .padding(8.dp),
-                                        horizontalArrangement = Arrangement.SpaceEvenly
-                                    ) {
-                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                            Text("BP", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
-                                            Text("${v.bpSystolic ?: "—"}/${v.bpDiastolic ?: "—"}", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
-                                        }
-                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                            Text("SpO2", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
-                                            Text("${v.spo2 ?: "—"}%", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
-                                        }
-                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                            Text("Pulse", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
-                                            Text("${v.pulseRate ?: "—"}", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
-                                        }
-                                    }
-                                }
-
-                                Spacer(modifier = Modifier.height(4.dp))
-
-                                Text(
-                                    "Complaint: ${item.patient.medicalHistory.primaryComplaint}",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = TextSecondary,
-                                    maxLines = 1
-                                )
-
-                                Spacer(modifier = Modifier.height(12.dp))
-
-                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    Button(
-                                        onClick = {
-                                            viewModel.selectPatient(item.patient)
-                                            onPatientSelect(item.patient.id)
-                                        },
-                                        colors = ButtonDefaults.buttonColors(containerColor = CallAcceptGreen),
-                                        modifier = Modifier.weight(1f).height(44.dp),
-                                        shape = RoundedCornerShape(24.dp)
-                                    ) {
-                                        Icon(Icons.Default.Call, contentDescription = null, modifier = Modifier.size(18.dp))
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        Text(stringResource(R.string.answer))
-                                    }
-                                    OutlinedButton(
-                                        onClick = { },
-                                        modifier = Modifier.weight(1f).height(44.dp),
-                                        shape = RoundedCornerShape(24.dp)
-                                    ) {
-                                        Text(stringResource(R.string.decline), color = TextSecondary)
-                                    }
-                                }
-                            }
-                        }
+                    items(queue, key = { it.patient.id }) { item ->
+                        UnifiedPatientCard(
+                            patient = item.patient,
+                            status = item.status,
+                            flow = PatientCardFlow.DOCTOR,
+                            onClick = {
+                                viewModel.selectPatient(item.patient)
+                                onPatientSelect(item.patient.id)
+                            },
+                            line3Text = item.patient.medicalHistory.primaryComplaint.takeIf { it.isNotBlank() },
+                            line4Text = item.patient.registeredBy.takeIf { it.isNotBlank() }?.let { "HW: $it \u2022 ${item.time}" }
+                                ?: item.time.takeIf { it.isNotBlank() },
+                            onAccept = {
+                                viewModel.selectPatient(item.patient)
+                                onPatientSelect(item.patient.id)
+                            },
+                            onDecline = { }
+                        )
                     }
                 }
             }

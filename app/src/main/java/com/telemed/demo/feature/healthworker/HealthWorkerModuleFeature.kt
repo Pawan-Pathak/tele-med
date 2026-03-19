@@ -473,15 +473,27 @@ fun HWDashboardScreen(viewModel: HealthWorkerModuleViewModel, onNewPatient: () -
 
                 if (recentPatients.isEmpty()) {
                     Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                        Text("No patients registered yet.", style = MaterialTheme.typography.bodyMedium, color = TextMuted)
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(Icons.Default.People, contentDescription = null, modifier = Modifier.size(64.dp), tint = TextSecondary)
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text("No patients registered yet for today's visit", style = MaterialTheme.typography.bodyMedium, color = TextMuted)
+                        }
                     }
                 } else {
-                    LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.weight(1f)) {
-                        items(recentPatients) { patient ->
-                            HWPatientCard(
+                    LazyColumn(
+                        verticalArrangement = Arrangement.spacedBy(6.dp),
+                        contentPadding = PaddingValues(top = 12.dp, bottom = 16.dp),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        items(recentPatients, key = { it.id }) { patient ->
+                            UnifiedPatientCard(
                                 patient = patient,
+                                status = patient.status,
+                                flow = PatientCardFlow.HEALTH_WORKER,
                                 onClick = { onPatientClick(patient.id) },
-                                onConsentClick = { onConsentClick(patient.id) }
+                                line3Text = patient.medicalHistory.primaryComplaint.takeIf { it.isNotBlank() },
+                                line4Text = patient.registeredAt.takeIf { it.isNotBlank() },
+                                onConsentClick = if (patient.consentGiven == null) {{ onConsentClick(patient.id) }} else null
                             )
                         }
                     }
@@ -642,128 +654,6 @@ fun HWConsentScreen(
                             }
                         }
                     }
-                }
-            }
-        }
-    }
-}
-
-// ============ Enhanced Patient Card for HW Dashboard ============
-
-@Composable
-private fun HWPatientCard(patient: Patient, onClick: () -> Unit, onConsentClick: (() -> Unit)? = null) {
-    Card(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = BackgroundCard),
-        elevation = CardDefaults.cardElevation(2.dp)
-    ) {
-        Column(modifier = Modifier.padding(14.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                // Avatar with initials
-                Surface(
-                    shape = CircleShape,
-                    color = HealthWorkerBg,
-                    modifier = Modifier.size(44.dp)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Text(
-                            patient.fullName.split(" ").take(2).joinToString("") { it.first().uppercase() },
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = HealthWorkerColor
-                        )
-                    }
-                }
-                Spacer(modifier = Modifier.width(12.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(patient.fullName, style = MaterialTheme.typography.titleMedium, color = TextPrimary)
-                    Text("${patient.id} • ${patient.age}y ${patient.gender.name}", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
-                }
-                StatusBadge(patient.status)
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Complaint
-            if (patient.medicalHistory.primaryComplaint.isNotBlank()) {
-                Row(
-                    modifier = Modifier.padding(bottom = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    Icon(Icons.Default.MedicalInformation, contentDescription = null, tint = HealthWorkerColor, modifier = Modifier.size(16.dp))
-                    Text(patient.medicalHistory.primaryComplaint, style = MaterialTheme.typography.bodySmall, color = TextPrimary, maxLines = 1)
-                }
-            }
-
-            // Vitals summary row
-            patient.vitals.let { v ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(BackgroundPage, RoundedCornerShape(8.dp))
-                        .padding(8.dp),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("BP", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
-                        Text("${v.bpSystolic ?: "—"}/${v.bpDiastolic ?: "—"}", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
-                    }
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("SpO2", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
-                        Text("${v.spo2 ?: "—"}%", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
-                    }
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("Pulse", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
-                        Text("${v.pulseRate ?: "—"}", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
-                    }
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("Sugar", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
-                        Text("${v.bloodSugar?.toInt() ?: "—"}", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
-                    }
-                }
-            }
-
-            // Tags row with consent badge
-            Spacer(modifier = Modifier.height(4.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Surface(shape = RoundedCornerShape(8.dp), color = HealthWorkerBg) {
-                    Row(modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Icon(Icons.Default.Schedule, contentDescription = null, tint = HealthWorkerColor, modifier = Modifier.size(13.dp))
-                        Text(patient.registeredAt, style = MaterialTheme.typography.labelSmall, color = HealthWorkerColor)
-                    }
-                }
-                if (patient.address.village.isNotBlank()) {
-                    Surface(shape = RoundedCornerShape(8.dp), color = BackgroundPage) {
-                        Row(modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Icon(Icons.Default.LocationOn, contentDescription = null, tint = TextMuted, modifier = Modifier.size(13.dp))
-                            Text(patient.address.village, style = MaterialTheme.typography.labelSmall, color = TextMuted)
-                        }
-                    }
-                }
-                Spacer(modifier = Modifier.weight(1f))
-                ConsentBadge(consentGiven = patient.consentGiven)
-            }
-
-            // Consent action button if not yet given
-            if (patient.consentGiven == null && onConsentClick != null) {
-                Spacer(modifier = Modifier.height(6.dp))
-                OutlinedButton(
-                    onClick = onConsentClick,
-                    modifier = Modifier.fillMaxWidth().height(36.dp),
-                    shape = RoundedCornerShape(18.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = HealthWorkerColor),
-                    border = BorderStroke(1.dp, HealthWorkerColor)
-                ) {
-                    Icon(Icons.Default.HowToReg, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Take Consent", style = MaterialTheme.typography.labelMedium)
                 }
             }
         }

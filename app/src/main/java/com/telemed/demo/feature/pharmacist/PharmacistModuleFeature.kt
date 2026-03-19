@@ -264,143 +264,44 @@ fun PharmacistQueueScreen(
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(Icons.Default.People, contentDescription = null, modifier = Modifier.size(64.dp), tint = TextSecondary)
                         Spacer(modifier = Modifier.height(8.dp))
-                        Text("No patients in queue", style = MaterialTheme.typography.bodyLarge, color = TextSecondary)
+                        Text("No prescriptions pending for dispensing", style = MaterialTheme.typography.bodyLarge, color = TextSecondary)
                     }
                 }
             } else {
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(horizontal = responsiveHorizontalPadding(), vertical = 10.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                        .padding(horizontal = responsiveHorizontalPadding()),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                    contentPadding = PaddingValues(top = 12.dp, bottom = 16.dp)
                 ) {
-                    items(queue) { item ->
-                        PharmacistPatientCard(
+                    items(queue, key = { it.patient.id }) { item ->
+                        val hasPrescription = prescription != null && prescription?.patientId == item.patient.id
+                        val medicineSummary = if (hasPrescription && prescription != null) {
+                            val names = prescription!!.medicines.map { it.name }
+                            when {
+                                names.isEmpty() -> null
+                                names.size <= 2 -> names.joinToString(", ")
+                                else -> "${names.take(2).joinToString(", ")} + ${names.size - 2} more"
+                            }
+                        } else null
+                        val allergyText = if (hasPrescription) prescription?.allergies?.takeIf { it.isNotBlank() }?.let { "Allergy: $it" } else null
+
+                        UnifiedPatientCard(
                             patient = item.patient,
-                            time = item.time,
                             status = item.status,
-                            hasPrescription = prescription != null && prescription?.patientId == item.patient.id,
+                            flow = PatientCardFlow.PHARMACIST,
                             onClick = {
                                 viewModel.selectPatient(item.patient)
                                 onPatientSelect(item.patient.id)
-                            }
+                            },
+                            line3Text = medicineSummary
+                                ?: item.patient.medicalHistory.primaryComplaint.takeIf { it.isNotBlank() },
+                            line4Text = allergyText,
+                            line4IsWarning = allergyText != null
                         )
                     }
                 }
-            }
-        }
-    }
-}
-
-// ============ Enhanced Patient Card for Pharmacist Queue ============
-
-@Composable
-private fun PharmacistPatientCard(
-    patient: Patient,
-    time: String,
-    status: ConsultationStatus,
-    hasPrescription: Boolean,
-    onClick: () -> Unit
-) {
-    Card(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = BackgroundCard),
-        elevation = CardDefaults.cardElevation(2.dp)
-    ) {
-        Column(modifier = Modifier.padding(14.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Surface(
-                    shape = CircleShape,
-                    color = PharmacistBg,
-                    modifier = Modifier.size(44.dp)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Text(
-                            patient.fullName.split(" ").take(2).joinToString("") { it.first().uppercase() },
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = PharmacistColor
-                        )
-                    }
-                }
-                Spacer(modifier = Modifier.width(12.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(patient.fullName, style = MaterialTheme.typography.titleMedium, color = TextPrimary)
-                    Text("${patient.id} • ${patient.age}y ${patient.gender.name}", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
-                }
-                StatusBadge(status)
-            }
-
-            Spacer(modifier = Modifier.height(6.dp))
-
-            // Complaint
-            if (patient.medicalHistory.primaryComplaint.isNotBlank()) {
-                Row(
-                    modifier = Modifier.padding(bottom = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    Icon(Icons.Default.MedicalInformation, contentDescription = null, tint = PharmacistColor, modifier = Modifier.size(15.dp))
-                    Text(patient.medicalHistory.primaryComplaint, style = MaterialTheme.typography.bodySmall, color = TextPrimary, maxLines = 1)
-                }
-            }
-
-            // Vitals summary
-            patient.vitals.let { v ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(BackgroundPage, RoundedCornerShape(8.dp))
-                        .padding(8.dp),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("BP", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
-                        Text("${v.bpSystolic ?: "—"}/${v.bpDiastolic ?: "—"}", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
-                    }
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("SpO2", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
-                        Text("${v.spo2 ?: "—"}%", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
-                    }
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("Pulse", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
-                        Text("${v.pulseRate ?: "—"}", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
-                    }
-                }
-            }
-
-            // Tags row
-            Spacer(modifier = Modifier.height(4.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Surface(shape = RoundedCornerShape(8.dp), color = PharmacistBg) {
-                    Row(modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Icon(Icons.Default.Schedule, contentDescription = null, tint = PharmacistColor, modifier = Modifier.size(13.dp))
-                        Text(time, style = MaterialTheme.typography.labelSmall, color = PharmacistColor)
-                    }
-                }
-                if (hasPrescription) {
-                    Surface(shape = RoundedCornerShape(8.dp), color = StatusDoneBg) {
-                        Row(modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Icon(Icons.Default.Description, contentDescription = null, tint = StatusDoneText, modifier = Modifier.size(13.dp))
-                            Text("Rx Ready", style = MaterialTheme.typography.labelSmall, color = StatusDoneText)
-                        }
-                    }
-                }
-                if (patient.address.village.isNotBlank()) {
-                    Surface(shape = RoundedCornerShape(8.dp), color = BackgroundPage) {
-                        Row(modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Icon(Icons.Default.LocationOn, contentDescription = null, tint = TextMuted, modifier = Modifier.size(13.dp))
-                            Text(patient.address.village, style = MaterialTheme.typography.labelSmall, color = TextMuted)
-                        }
-                    }
-                }
-                Spacer(modifier = Modifier.weight(1f))
-                ConsentBadge(consentGiven = patient.consentGiven)
             }
         }
     }
