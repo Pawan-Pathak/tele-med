@@ -958,7 +958,7 @@ fun DoctorPrescriptionPreviewScreen(
                                         modifier = Modifier.size(40.dp)
                                     ) {
                                         Box(contentAlignment = Alignment.Center) {
-                                            Icon(Icons.Default.Chat, contentDescription = null, tint = Color.White, modifier = Modifier.size(22.dp))
+                                            Icon(Icons.Default.Forum, contentDescription = null, tint = Color.White, modifier = Modifier.size(22.dp))
                                         }
                                     }
                                     Column(modifier = Modifier.weight(1f)) {
@@ -990,7 +990,7 @@ fun DoctorPrescriptionPreviewScreen(
                                         modifier = Modifier.size(40.dp)
                                     ) {
                                         Box(contentAlignment = Alignment.Center) {
-                                            Icon(Icons.Default.Message, contentDescription = null, tint = Color.White, modifier = Modifier.size(22.dp))
+                                            Icon(Icons.Default.ChatBubble, contentDescription = null, tint = Color.White, modifier = Modifier.size(22.dp))
                                         }
                                     }
                                     Column(modifier = Modifier.weight(1f)) {
@@ -1022,7 +1022,7 @@ fun DoctorPrescriptionPreviewScreen(
                                         modifier = Modifier.size(40.dp)
                                     ) {
                                         Box(contentAlignment = Alignment.Center) {
-                                            Icon(Icons.Default.Mms, contentDescription = null, tint = Color.White, modifier = Modifier.size(22.dp))
+                                            Icon(Icons.Default.Image, contentDescription = null, tint = Color.White, modifier = Modifier.size(22.dp))
                                         }
                                     }
                                     Column(modifier = Modifier.weight(1f)) {

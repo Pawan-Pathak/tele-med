@@ -878,13 +878,13 @@ fun PharmacistPrescriptionViewScreen(
                             ) {
                                 Column(modifier = Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                                     Text("Share via", style = MaterialTheme.typography.labelMedium, color = TextPrimary)
-                                    ShareOptionRow(label = "WhatsApp", subtitle = "Share PDF", iconTint = WhatsAppGreen, icon = Icons.Default.Chat, bgColor = Color(0xFFE7F5E7)) {
+                                    ShareOptionRow(label = "WhatsApp", subtitle = "Share PDF", iconTint = WhatsAppGreen, icon = Icons.Default.Forum, bgColor = Color(0xFFE7F5E7)) {
                                         showShareOptions = false; shareConfirmMessage = "Shared via WhatsApp!"
                                     }
-                                    ShareOptionRow(label = "SMS", subtitle = "Send summary", iconTint = Color(0xFF1A73E8), icon = Icons.Default.Message, bgColor = Color(0xFFE3F0FD)) {
+                                    ShareOptionRow(label = "SMS", subtitle = "Send summary", iconTint = Color(0xFF1A73E8), icon = Icons.Default.ChatBubble, bgColor = Color(0xFFE3F0FD)) {
                                         showShareOptions = false; shareConfirmMessage = "Shared via SMS!"
                                     }
-                                    ShareOptionRow(label = "MMS", subtitle = "Picture message", iconTint = MMSBlue, icon = Icons.Default.Mms, bgColor = Color(0xFFE0ECFF)) {
+                                    ShareOptionRow(label = "MMS", subtitle = "Picture message", iconTint = MMSBlue, icon = Icons.Default.Image, bgColor = Color(0xFFE0ECFF)) {
                                         showShareOptions = false; shareConfirmMessage = "Shared via MMS!"
                                     }
                                 }
