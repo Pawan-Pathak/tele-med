@@ -304,8 +304,7 @@ fun DoctorQueueScreen(
                                 onPatientSelect(item.patient.id)
                             },
                             line3Text = item.patient.medicalHistory.primaryComplaint.takeIf { it.isNotBlank() },
-                            line4Text = item.patient.registeredBy.takeIf { it.isNotBlank() }?.let { "HW: $it \u2022 ${item.time}" }
-                                ?: item.time.takeIf { it.isNotBlank() },
+                            line4Text = item.time.takeIf { it.isNotBlank() },
                             onAccept = {
                                 viewModel.selectPatient(item.patient)
                                 onPatientSelect(item.patient.id)

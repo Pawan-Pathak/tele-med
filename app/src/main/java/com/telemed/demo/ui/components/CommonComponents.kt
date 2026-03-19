@@ -640,6 +640,11 @@ fun UnifiedPatientCard(
     line3Text: String? = null,
     line4Text: String? = null,
     line4IsWarning: Boolean = false,
+    dateText: String? = null,
+    villageName: String? = null,
+    consentGiven: Boolean? = null,
+    showConsentBadge: Boolean = false,
+    isRxReady: Boolean = false,
     onConsentClick: (() -> Unit)? = null,
     onAccept: (() -> Unit)? = null,
     onDecline: (() -> Unit)? = null
@@ -786,6 +791,112 @@ fun UnifiedPatientCard(
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
+                        }
+                    }
+                }
+            }
+
+            // Date + Village row (HW & Pharmacist flows)
+            if ((flow == PatientCardFlow.HEALTH_WORKER || flow == PatientCardFlow.PHARMACIST) &&
+                (!dateText.isNullOrBlank() || !villageName.isNullOrBlank())
+            ) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    if (!dateText.isNullOrBlank()) {
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = moduleBg
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Icon(Icons.Default.Schedule, contentDescription = null, tint = moduleColor, modifier = Modifier.size(13.dp))
+                                Text(dateText, style = MaterialTheme.typography.labelSmall, color = moduleColor)
+                            }
+                        }
+                    }
+                    if (!villageName.isNullOrBlank()) {
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = moduleBg
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Icon(Icons.Default.LocationOn, contentDescription = null, tint = moduleColor, modifier = Modifier.size(13.dp))
+                                Text(villageName, style = MaterialTheme.typography.labelSmall, color = moduleColor)
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Consent + RxReady badges row (HW & Pharmacist flows)
+            if ((flow == PatientCardFlow.HEALTH_WORKER || flow == PatientCardFlow.PHARMACIST) &&
+                (showConsentBadge || isRxReady)
+            ) {
+                Spacer(modifier = Modifier.height(6.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    if (showConsentBadge) {
+                        val consentLabel = when (consentGiven) {
+                            true -> "Consent Given"
+                            false -> "Consent Declined"
+                            null -> "Consent Pending"
+                        }
+                        val consentBg = when (consentGiven) {
+                            true -> StatusDoneBg
+                            false -> StatusAlertBg
+                            null -> StatusAwaitingBg
+                        }
+                        val consentTextColor = when (consentGiven) {
+                            true -> StatusDoneText
+                            false -> StatusAlertText
+                            null -> StatusAwaitingText
+                        }
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = consentBg
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Icon(
+                                    if (consentGiven == true) Icons.Default.CheckCircle
+                                    else if (consentGiven == false) Icons.Default.Cancel
+                                    else Icons.Default.HourglassEmpty,
+                                    contentDescription = null,
+                                    tint = consentTextColor,
+                                    modifier = Modifier.size(13.dp)
+                                )
+                                Text(consentLabel, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold), color = consentTextColor)
+                            }
+                        }
+                    }
+                    if (isRxReady) {
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = StatusDoneBg
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Icon(Icons.Default.Medication, contentDescription = null, tint = StatusDoneText, modifier = Modifier.size(13.dp))
+                                Text("Rx Ready", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold), color = StatusDoneText)
+                            }
                         }
                     }
                 }

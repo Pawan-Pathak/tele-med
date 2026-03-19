@@ -298,7 +298,12 @@ fun PharmacistQueueScreen(
                             line3Text = medicineSummary
                                 ?: item.patient.medicalHistory.primaryComplaint.takeIf { it.isNotBlank() },
                             line4Text = allergyText,
-                            line4IsWarning = allergyText != null
+                            line4IsWarning = allergyText != null,
+                            dateText = item.patient.registeredAt.takeIf { it.isNotBlank() },
+                            villageName = item.patient.address.village.takeIf { it.isNotBlank() },
+                            showConsentBadge = true,
+                            consentGiven = item.patient.consentGiven,
+                            isRxReady = hasPrescription
                         )
                     }
                 }
