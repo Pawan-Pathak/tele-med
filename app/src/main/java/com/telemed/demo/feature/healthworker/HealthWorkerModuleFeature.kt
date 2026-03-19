@@ -1,6 +1,7 @@
 package com.telemed.demo.feature.healthworker
 
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -32,6 +33,7 @@ import com.telemed.demo.domain.model.*
 import com.telemed.demo.domain.usecase.*
 import com.telemed.demo.ui.components.*
 import com.telemed.demo.ui.responsive.AppTopBar
+import com.telemed.demo.ui.responsive.responsiveHorizontalPadding
 import com.telemed.demo.ui.theme.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -206,6 +208,22 @@ class HealthWorkerModuleViewModel(
     fun addMockDocument(type: String) { val name = if (type == "report") "Report_${_uploadedFiles.value.size + 1}.pdf" else "Xray_${_uploadedFiles.value.size + 1}.jpg"; _uploadedFiles.value = _uploadedFiles.value + DocumentFile(name, type) }
     fun removeDocument(doc: DocumentFile) { _uploadedFiles.value = _uploadedFiles.value - doc }
 
+    // Consent management
+    fun setPatientConsent(patientId: String, consent: Boolean) {
+        viewModelScope.launch {
+            val idx = _recentPatients.value.indexOfFirst { it.id == patientId }
+            if (idx >= 0) {
+                val updated = _recentPatients.value.toMutableList()
+                updated[idx] = updated[idx].copy(consentGiven = consent)
+                _recentPatients.value = updated
+            }
+        }
+    }
+
+    fun getPatientById(patientId: String): Patient? {
+        return _recentPatients.value.find { it.id == patientId }
+    }
+
     fun submitRegistration() {
         viewModelScope.launch {
             _isLoading.value = true
@@ -319,11 +337,11 @@ fun HWLoginScreen(
                 .fillMaxSize()
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
-                .padding(24.dp),
+                .padding(horizontal = 24.dp, vertical = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             Surface(
                 shape = CircleShape,
@@ -403,7 +421,7 @@ fun HWSessionSetupScreen(viewModel: HealthWorkerModuleViewModel, onSessionStarte
 // ============ Dashboard ============
 
 @Composable
-fun HWDashboardScreen(viewModel: HealthWorkerModuleViewModel, onNewPatient: () -> Unit, onPatientClick: (String) -> Unit, onConnectDoctor: () -> Unit, onBack: () -> Unit) {
+fun HWDashboardScreen(viewModel: HealthWorkerModuleViewModel, onNewPatient: () -> Unit, onPatientClick: (String) -> Unit, onConsentClick: (String) -> Unit, onConnectDoctor: () -> Unit, onBack: () -> Unit) {
     val recentPatients by viewModel.recentPatients.collectAsState()
     val spokeName by viewModel.spokeName.collectAsState()
     val selectedDistrict by viewModel.selectedDistrict.collectAsState()
@@ -426,7 +444,7 @@ fun HWDashboardScreen(viewModel: HealthWorkerModuleViewModel, onNewPatient: () -
                 )
             )
 
-            Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+            Column(modifier = Modifier.fillMaxSize().padding(horizontal = responsiveHorizontalPadding(), vertical = 16.dp)) {
                 // Action buttons row
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -460,7 +478,168 @@ fun HWDashboardScreen(viewModel: HealthWorkerModuleViewModel, onNewPatient: () -
                 } else {
                     LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.weight(1f)) {
                         items(recentPatients) { patient ->
-                            HWPatientCard(patient = patient, onClick = { onPatientClick(patient.id) })
+                            HWPatientCard(
+                                patient = patient,
+                                onClick = { onPatientClick(patient.id) },
+                                onConsentClick = { onConsentClick(patient.id) }
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// ============ HW Consent Screen ============
+
+@Composable
+fun HWConsentScreen(
+    viewModel: HealthWorkerModuleViewModel,
+    patientId: String,
+    onConsentGiven: () -> Unit,
+    onConsentDeclined: () -> Unit,
+    onBack: () -> Unit
+) {
+    val patients by viewModel.recentPatients.collectAsState()
+    val patient = patients.find { it.id == patientId }
+
+    Scaffold(
+        topBar = { AppTopBar(title = "Patient Consent", onBack = onBack) },
+        containerColor = BackgroundPage
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .verticalScroll(rememberScrollState())
+                .padding(20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            if (patient != null) {
+                // Patient info card
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = HealthWorkerBg)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Surface(shape = CircleShape, color = HealthWorkerColor.copy(alpha = 0.15f), modifier = Modifier.size(48.dp)) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Text(
+                                        patient.fullName.split(" ").take(2).joinToString("") { it.first().uppercase() },
+                                        style = MaterialTheme.typography.titleSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = HealthWorkerColor
+                                    )
+                                }
+                            }
+                            Column {
+                                Text(patient.fullName, style = MaterialTheme.typography.titleLarge, color = TextPrimary)
+                                Text("ID: ${patient.id}", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+                                Text("${patient.age}y • ${patient.gender.name} • ${patient.address.village}", style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
+                            }
+                        }
+                        if (patient.medicalHistory.primaryComplaint.isNotEmpty()) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Icon(Icons.Default.MedicalInformation, contentDescription = null, tint = HealthWorkerColor, modifier = Modifier.size(16.dp))
+                                Text("Complaint: ${patient.medicalHistory.primaryComplaint}", style = MaterialTheme.typography.bodyMedium, color = TextPrimary)
+                            }
+                        }
+                    }
+                }
+
+                // Current consent status
+                if (patient.consentGiven != null) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (patient.consentGiven == true) StatusDoneBg else StatusAlertBg
+                        )
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(
+                                if (patient.consentGiven == true) Icons.Default.CheckCircle else Icons.Default.Cancel,
+                                contentDescription = null,
+                                tint = if (patient.consentGiven == true) StatusDoneText else StatusAlertText,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Text(
+                                if (patient.consentGiven == true) "Consent already given" else "Consent was declined",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = if (patient.consentGiven == true) StatusDoneText else StatusAlertText
+                            )
+                        }
+                    }
+                }
+
+                // Consent request card
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = BackgroundCard),
+                    elevation = CardDefaults.cardElevation(2.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        Surface(shape = CircleShape, color = HealthWorkerBg, modifier = Modifier.size(56.dp)) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(Icons.Default.HowToReg, contentDescription = null, tint = HealthWorkerColor, modifier = Modifier.size(32.dp))
+                            }
+                        }
+
+                        Text(
+                            "Does the patient consent to teleconsultation?",
+                            style = MaterialTheme.typography.titleMedium,
+                            textAlign = TextAlign.Center,
+                            color = TextPrimary
+                        )
+
+                        Text(
+                            "The patient must give verbal consent before connecting with the doctor for a video/phone consultation.",
+                            style = MaterialTheme.typography.bodySmall,
+                            textAlign = TextAlign.Center,
+                            color = TextSecondary
+                        )
+
+                        Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Button(
+                                onClick = {
+                                    viewModel.setPatientConsent(patientId, true)
+                                    onConsentGiven()
+                                },
+                                modifier = Modifier.fillMaxWidth().height(52.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = CallAcceptGreen),
+                                shape = RoundedCornerShape(24.dp)
+                            ) {
+                                Icon(Icons.Default.CheckCircle, contentDescription = null, modifier = Modifier.size(22.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Yes, Patient Consents", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                            }
+                            Button(
+                                onClick = {
+                                    viewModel.setPatientConsent(patientId, false)
+                                    onConsentDeclined()
+                                },
+                                modifier = Modifier.fillMaxWidth().height(52.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = CallDeclineRed),
+                                shape = RoundedCornerShape(24.dp)
+                            ) {
+                                Icon(Icons.Default.Cancel, contentDescription = null, modifier = Modifier.size(22.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("No, Declined", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                            }
                         }
                     }
                 }
@@ -472,7 +651,7 @@ fun HWDashboardScreen(viewModel: HealthWorkerModuleViewModel, onNewPatient: () -
 // ============ Enhanced Patient Card for HW Dashboard ============
 
 @Composable
-private fun HWPatientCard(patient: Patient, onClick: () -> Unit) {
+private fun HWPatientCard(patient: Patient, onClick: () -> Unit, onConsentClick: (() -> Unit)? = null) {
     Card(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
@@ -547,11 +726,12 @@ private fun HWPatientCard(patient: Patient, onClick: () -> Unit) {
                 }
             }
 
-            // Registration time
+            // Tags row with consent badge
             Spacer(modifier = Modifier.height(4.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Surface(shape = RoundedCornerShape(8.dp), color = HealthWorkerBg) {
                     Row(modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -566,6 +746,24 @@ private fun HWPatientCard(patient: Patient, onClick: () -> Unit) {
                             Text(patient.address.village, style = MaterialTheme.typography.labelSmall, color = TextMuted)
                         }
                     }
+                }
+                Spacer(modifier = Modifier.weight(1f))
+                ConsentBadge(consentGiven = patient.consentGiven)
+            }
+
+            // Consent action button if not yet given
+            if (patient.consentGiven == null && onConsentClick != null) {
+                Spacer(modifier = Modifier.height(6.dp))
+                OutlinedButton(
+                    onClick = onConsentClick,
+                    modifier = Modifier.fillMaxWidth().height(36.dp),
+                    shape = RoundedCornerShape(18.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = HealthWorkerColor),
+                    border = BorderStroke(1.dp, HealthWorkerColor)
+                ) {
+                    Icon(Icons.Default.HowToReg, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Take Consent", style = MaterialTheme.typography.labelMedium)
                 }
             }
         }
@@ -695,7 +893,7 @@ fun HWConnectDoctorScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 // Language selection (compact)
-                SectionHeader("Language", moduleColor = HealthWorkerColor)
+                SectionHeader("Language", moduleColor = HealthWorkerColor, icon = Icons.Default.Language)
                 DropdownField(
                     value = selectedLanguage,
                     onValueChange = viewModel::setLanguage,
@@ -704,7 +902,7 @@ fun HWConnectDoctorScreen(
                 )
 
                 // Patient selection
-                SectionHeader("Select Patient", moduleColor = HealthWorkerColor)
+                SectionHeader("Select Patient", moduleColor = HealthWorkerColor, icon = Icons.Default.PersonSearch)
 
                 if (waitingPatients.isEmpty()) {
                     Card(
@@ -1565,7 +1763,7 @@ fun HWRegStep5Screen(viewModel: HealthWorkerModuleViewModel, onNext: () -> Unit,
                     UploadZone(label = "Camera", icon = Icons.Default.CameraAlt, onClick = { viewModel.addMockDocument("diagnostic") }, modifier = Modifier.weight(1f))
                 }
                 if (uploadedFiles.isNotEmpty()) {
-                    SectionHeader("Uploaded Files (${uploadedFiles.size})", moduleColor = HealthWorkerColor)
+                    SectionHeader("Uploaded Files (${uploadedFiles.size})", moduleColor = HealthWorkerColor, icon = Icons.Default.AttachFile)
                     uploadedFiles.forEach { doc ->
                         UploadedFileRow(fileName = doc.name, fileType = doc.type, onRemove = { viewModel.removeDocument(doc) }, moduleColor = HealthWorkerColor)
                     }
@@ -1630,15 +1828,15 @@ fun HWRegStep6Screen(viewModel: HealthWorkerModuleViewModel, onSubmitSuccess: ()
             } else {
                 StepProgressIndicator(6, 6, stepLabels, Modifier.padding(horizontal = 16.dp, vertical = 8.dp), HealthWorkerColor)
                 Column(modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    SectionHeader("Personal Information", moduleColor = HealthWorkerColor)
+                    SectionHeader("Personal Information", moduleColor = HealthWorkerColor, icon = Icons.Default.Person)
                     PatientSummaryCard("Name", fullName); PatientSummaryCard("Guardian", guardianName); PatientSummaryCard("Gender", gender.name); PatientSummaryCard("Age", age); PatientSummaryCard("DOB", dob.ifEmpty { "Not provided" }); PatientSummaryCard("Mobile", mobile); PatientSummaryCard("Aadhaar", aadhaar.ifEmpty { "Not provided" })
-                    SectionHeader("Address", moduleColor = HealthWorkerColor)
+                    SectionHeader("Address", moduleColor = HealthWorkerColor, icon = Icons.Default.LocationOn)
                     PatientSummaryCard("Village", regVillage); PatientSummaryCard("District", regDistrict); PatientSummaryCard("State", regState)
-                    SectionHeader("Vitals", moduleColor = HealthWorkerColor)
+                    SectionHeader("Vitals", moduleColor = HealthWorkerColor, icon = Icons.Default.MonitorHeart)
                     PatientSummaryCard("Weight", if (weight.isNotEmpty()) "$weight kg" else "—"); PatientSummaryCard("Temperature", if (temperature.isNotEmpty()) "$temperature°" else "—"); PatientSummaryCard("BP", if (bpSystolic.isNotEmpty()) "$bpSystolic/$bpDiastolic mmHg" else "—"); PatientSummaryCard("Blood Sugar", if (bloodSugar.isNotEmpty()) "$bloodSugar mg/dL" else "—"); PatientSummaryCard("Hemoglobin", if (hemoglobin.isNotEmpty()) "$hemoglobin g/dL" else "—"); PatientSummaryCard("SpO2", if (spo2.isNotEmpty()) "$spo2%" else "—"); PatientSummaryCard("Pulse", if (pulseRate.isNotEmpty()) "$pulseRate bpm" else "—")
-                    SectionHeader("Medical History", moduleColor = HealthWorkerColor)
+                    SectionHeader("Medical History", moduleColor = HealthWorkerColor, icon = Icons.Default.MedicalInformation)
                     PatientSummaryCard("Complaint", primaryComplaint.ifEmpty { "—" }); PatientSummaryCard("Symptoms", selectedSymptoms.joinToString(", ").ifEmpty { "—" }); PatientSummaryCard("Conditions", selectedConditions.joinToString(", ").ifEmpty { "—" })
-                    SectionHeader("Documents", moduleColor = HealthWorkerColor)
+                    SectionHeader("Documents", moduleColor = HealthWorkerColor, icon = Icons.Default.Description)
                     PatientSummaryCard("Files", if (uploadedFiles.isNotEmpty()) "${uploadedFiles.size} file(s)" else "None")
                 }
                 Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -1671,13 +1869,13 @@ fun HWPatientDetailScreen(viewModel: HealthWorkerModuleViewModel, patientId: Str
                     }
                 }
                 Spacer(modifier = Modifier.height(12.dp))
-                SectionHeader("Personal Info", moduleColor = HealthWorkerColor)
+                SectionHeader("Personal Info", moduleColor = HealthWorkerColor, icon = Icons.Default.Person)
                 PatientSummaryCard("Age", "${patient.age}"); PatientSummaryCard("Gender", patient.gender.name); PatientSummaryCard("Mobile", patient.mobile); PatientSummaryCard("Guardian", patient.guardianName)
-                SectionHeader("Address", moduleColor = HealthWorkerColor)
+                SectionHeader("Address", moduleColor = HealthWorkerColor, icon = Icons.Default.LocationOn)
                 PatientSummaryCard("Village", patient.address.village); PatientSummaryCard("District", patient.address.district)
-                SectionHeader("Vitals", moduleColor = HealthWorkerColor)
+                SectionHeader("Vitals", moduleColor = HealthWorkerColor, icon = Icons.Default.MonitorHeart)
                 patient.vitals.let { v -> PatientSummaryCard("Weight", "${v.weight ?: "—"} kg"); PatientSummaryCard("Temp", "${v.temperature ?: "—"}°${v.temperatureUnit}"); PatientSummaryCard("BP", "${v.bpSystolic ?: "—"}/${v.bpDiastolic ?: "—"} mmHg"); PatientSummaryCard("SpO2", "${v.spo2 ?: "—"}%"); PatientSummaryCard("Pulse", "${v.pulseRate ?: "—"} bpm") }
-                SectionHeader("Chief Complaint", moduleColor = HealthWorkerColor)
+                SectionHeader("Chief Complaint", moduleColor = HealthWorkerColor, icon = Icons.Default.Report)
                 Text(patient.medicalHistory.primaryComplaint.ifEmpty { "—" }, style = MaterialTheme.typography.bodyLarge)
                 PatientSummaryCard("Registered", patient.registeredAt); PatientSummaryCard("By", patient.registeredBy)
             }

@@ -17,6 +17,9 @@ sealed class AppDestination(val route: String) {
     data object HWPatientDetail : AppDestination("hw_patient_detail/{patientId}") {
         fun createRoute(patientId: String) = "hw_patient_detail/$patientId"
     }
+    data object HWConsent : AppDestination("hw_consent/{patientId}") {
+        fun createRoute(patientId: String) = "hw_consent/$patientId"
+    }
     data object HWConnectDoctor : AppDestination("hw_connect_doctor")
     data object HWVideoCall : AppDestination("hw_video_call")
 

@@ -30,6 +30,7 @@ import com.telemed.demo.domain.model.*
 import com.telemed.demo.domain.usecase.*
 import com.telemed.demo.ui.components.*
 import com.telemed.demo.ui.responsive.AppTopBar
+import com.telemed.demo.ui.responsive.responsiveHorizontalPadding
 import com.telemed.demo.ui.theme.*
 import com.telemed.demo.feature.healthworker.DoctorAvatarImage
 import kotlinx.coroutines.delay
@@ -175,11 +176,11 @@ fun PharmacistLoginScreen(
                 .fillMaxSize()
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
-                .padding(24.dp),
+                .padding(horizontal = 24.dp, vertical = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             Surface(
                 shape = CircleShape,
@@ -270,7 +271,7 @@ fun PharmacistQueueScreen(
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(16.dp),
+                        .padding(horizontal = responsiveHorizontalPadding(), vertical = 10.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     items(queue) { item ->
@@ -398,6 +399,8 @@ private fun PharmacistPatientCard(
                         }
                     }
                 }
+                Spacer(modifier = Modifier.weight(1f))
+                ConsentBadge(consentGiven = patient.consentGiven)
             }
         }
     }
@@ -430,7 +433,7 @@ fun PharmacistConsentScreen(
                 .fillMaxSize()
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
-                .padding(24.dp),
+                .padding(horizontal = 20.dp, vertical = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
@@ -497,8 +500,7 @@ fun PharmacistConsentScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
-
+            // Consent status from Health Worker
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
@@ -506,40 +508,35 @@ fun PharmacistConsentScreen(
                 elevation = CardDefaults.cardElevation(2.dp)
             ) {
                 Column(
-                    modifier = Modifier.padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(20.dp)
+                    modifier = Modifier.padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Surface(shape = CircleShape, color = PharmacistBg, modifier = Modifier.size(64.dp)) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(Icons.Default.HowToReg, contentDescription = null, tint = PharmacistColor, modifier = Modifier.size(36.dp))
-                        }
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Icon(Icons.Default.HowToReg, contentDescription = null, tint = PharmacistColor, modifier = Modifier.size(24.dp))
+                        Text("Consent Status", style = MaterialTheme.typography.titleMedium, color = TextPrimary)
                     }
-
-                    Text(stringResource(R.string.consent_question), style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center, color = TextPrimary)
-
-                    Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Button(
-                            onClick = { viewModel.setConsent(patientId, true); onConsentYes() },
-                            modifier = Modifier.fillMaxWidth().height(56.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = CallAcceptGreen),
-                            shape = RoundedCornerShape(24.dp)
-                        ) {
-                            Icon(Icons.Default.CheckCircle, contentDescription = null, modifier = Modifier.size(24.dp))
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(stringResource(R.string.yes), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                        }
-                        Button(
-                            onClick = { viewModel.setConsent(patientId, false); onConsentNo() },
-                            modifier = Modifier.fillMaxWidth().height(56.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = CallDeclineRed),
-                            shape = RoundedCornerShape(24.dp)
-                        ) {
-                            Icon(Icons.Default.Cancel, contentDescription = null, modifier = Modifier.size(24.dp))
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(stringResource(R.string.no), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                        }
+                    ConsentBadge(consentGiven = patient?.consentGiven)
+                    if (patient?.consentGiven == true) {
+                        Text("Consent was collected by the Health Worker during registration.", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+                    } else if (patient?.consentGiven == false) {
+                        Text("Patient declined consent during Health Worker visit.", style = MaterialTheme.typography.bodySmall, color = StatusAlertText)
+                    } else {
+                        Text("Consent has not been collected yet. Please contact the Health Worker.", style = MaterialTheme.typography.bodySmall, color = StatusAwaitingText)
                     }
+                }
+            }
+
+            // Video call option (only if consent given)
+            if (patient?.consentGiven == true) {
+                Button(
+                    onClick = { viewModel.setConsent(patientId, true); onConsentYes() },
+                    modifier = Modifier.fillMaxWidth().height(52.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = PharmacistColor),
+                    shape = RoundedCornerShape(24.dp)
+                ) {
+                    Icon(Icons.Default.VideoCall, contentDescription = null, modifier = Modifier.size(22.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Start Video Consultation", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
                 }
             }
         }
@@ -658,7 +655,7 @@ fun PharmacistPrescriptionViewScreen(
                     modifier = Modifier
                         .weight(1f)
                         .verticalScroll(rememberScrollState())
-                        .padding(16.dp),
+                        .padding(horizontal = responsiveHorizontalPadding(), vertical = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     // Prescription header card
@@ -689,7 +686,7 @@ fun PharmacistPrescriptionViewScreen(
                     Spacer(modifier = Modifier.height(8.dp))
 
                     // Patient info section
-                    SectionHeader("Patient Information", moduleColor = PharmacistColor)
+                    SectionHeader("Patient Information", moduleColor = PharmacistColor, icon = Icons.Default.Person)
                     PatientSummaryCard("Name", rx.patientName)
                     PatientSummaryCard("ID", rx.patientId)
                     PatientSummaryCard("Age/Gender", "${rx.patientAge}y / ${rx.patientGender}")
@@ -699,7 +696,7 @@ fun PharmacistPrescriptionViewScreen(
                         patient.vitals.let { v ->
                             if (v.weight != null || v.bpSystolic != null || v.spo2 != null) {
                                 Spacer(modifier = Modifier.height(4.dp))
-                                SectionHeader("Vitals", moduleColor = PharmacistColor)
+                                SectionHeader("Vitals", moduleColor = PharmacistColor, icon = Icons.Default.MonitorHeart)
                                 if (v.weight != null) PatientSummaryCard("Weight", "${v.weight} kg")
                                 if (v.temperature != null) PatientSummaryCard("Temp", "${v.temperature}${v.temperatureUnit}")
                                 if (v.bpSystolic != null) PatientSummaryCard("BP", "${v.bpSystolic}/${v.bpDiastolic} mmHg")
@@ -712,7 +709,7 @@ fun PharmacistPrescriptionViewScreen(
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = DividerColor)
 
                     // Diagnosis
-                    SectionHeader("Diagnosis", moduleColor = PharmacistColor)
+                    SectionHeader("Diagnosis", moduleColor = PharmacistColor, icon = Icons.Default.Biotech)
                     Text(rx.diagnosis.ifEmpty { "\u2014" }, style = MaterialTheme.typography.bodyLarge, color = TextPrimary)
                     if (rx.chiefComplaints.isNotBlank()) {
                         Text("Chief Complaints: ${rx.chiefComplaints}", style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
@@ -784,7 +781,7 @@ fun PharmacistPrescriptionViewScreen(
                     // Lab tests
                     if (rx.labTests.isNotEmpty()) {
                         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = DividerColor)
-                        SectionHeader("Lab Tests Advised", moduleColor = PharmacistColor)
+                        SectionHeader("Lab Tests Advised", moduleColor = PharmacistColor, icon = Icons.Default.Science)
                         rx.labTests.forEach { test ->
                             Row(modifier = Modifier.padding(vertical = 2.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 Icon(Icons.Default.Science, contentDescription = null, tint = PharmacistColor, modifier = Modifier.size(16.dp))
@@ -796,14 +793,14 @@ fun PharmacistPrescriptionViewScreen(
                     // Recommendations
                     if (rx.recommendations.isNotBlank()) {
                         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = DividerColor)
-                        SectionHeader("Recommendations", moduleColor = PharmacistColor)
+                        SectionHeader("Recommendations", moduleColor = PharmacistColor, icon = Icons.Default.Recommend)
                         Text(rx.recommendations, style = MaterialTheme.typography.bodyMedium, color = TextPrimary)
                     }
 
                     // Referral
                     if (rx.referral != null) {
                         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = DividerColor)
-                        SectionHeader("Referral", moduleColor = PharmacistColor)
+                        SectionHeader("Referral", moduleColor = PharmacistColor, icon = Icons.Default.Send)
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp),
@@ -819,14 +816,14 @@ fun PharmacistPrescriptionViewScreen(
                     // Procedures
                     if (rx.procedures.isNotBlank()) {
                         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = DividerColor)
-                        SectionHeader("Procedures", moduleColor = PharmacistColor)
+                        SectionHeader("Procedures", moduleColor = PharmacistColor, icon = Icons.Default.ContentCut)
                         Text(rx.procedures, style = MaterialTheme.typography.bodyMedium, color = TextPrimary)
                     }
 
                     // Imaging notes
                     if (rx.imagingNotes.isNotBlank()) {
                         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = DividerColor)
-                        SectionHeader("Imaging Notes", moduleColor = PharmacistColor)
+                        SectionHeader("Imaging Notes", moduleColor = PharmacistColor, icon = Icons.Default.Image)
                         Text(rx.imagingNotes, style = MaterialTheme.typography.bodyMedium, color = TextPrimary)
                     }
 
@@ -1008,7 +1005,7 @@ fun PharmacistDispenseScreen(
 
                 // Dispensation progress card
                 Card(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = responsiveHorizontalPadding(), vertical = 8.dp),
                     shape = RoundedCornerShape(12.dp),
                     colors = CardDefaults.cardColors(containerColor = dispensationBg)
                 ) {
@@ -1043,7 +1040,7 @@ fun PharmacistDispenseScreen(
                 // Mark all button
                 if (totalCount > 0) {
                     Row(
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = responsiveHorizontalPadding(), vertical = 4.dp),
                         horizontalArrangement = Arrangement.End
                     ) {
                         if (dispensedCount < totalCount) {
@@ -1072,7 +1069,7 @@ fun PharmacistDispenseScreen(
 
                 // Medicines list with dispensation controls
                 LazyColumn(
-                    modifier = Modifier.weight(1f).padding(horizontal = 16.dp),
+                    modifier = Modifier.weight(1f).padding(horizontal = responsiveHorizontalPadding()),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     items(medicines) { medicine ->

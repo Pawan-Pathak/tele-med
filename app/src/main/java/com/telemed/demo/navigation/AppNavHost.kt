@@ -81,6 +81,9 @@ fun AppNavHost(
                 onPatientClick = { patientId ->
                     navController.navigate(AppDestination.HWPatientDetail.createRoute(patientId))
                 },
+                onConsentClick = { patientId ->
+                    navController.navigate(AppDestination.HWConsent.createRoute(patientId))
+                },
                 onConnectDoctor = {
                     navController.navigate(AppDestination.HWConnectDoctor.route)
                 },
@@ -189,6 +192,26 @@ fun AppNavHost(
             HWPatientDetailScreen(
                 viewModel = vm,
                 patientId = patientId,
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(
+            route = AppDestination.HWConsent.route,
+            arguments = listOf(navArgument("patientId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val patientId = backStackEntry.arguments?.getString("patientId") ?: ""
+            val vm: HealthWorkerModuleViewModel = viewModel(
+                viewModelStoreOwner = remember(navController) {
+                    navController.getBackStackEntry(AppDestination.HWSessionSetup.route)
+                },
+                factory = factory
+            )
+            HWConsentScreen(
+                viewModel = vm,
+                patientId = patientId,
+                onConsentGiven = { navController.popBackStack() },
+                onConsentDeclined = { navController.popBackStack() },
                 onBack = { navController.popBackStack() }
             )
         }

@@ -51,75 +51,74 @@ fun HeroHeader(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(200.dp)
             .background(HeaderNavy)
     ) {
         // Decorative circle (top-right)
         Box(
             modifier = Modifier
-                .size(180.dp)
+                .size(140.dp)
                 .align(Alignment.TopEnd)
-                .offset(x = 40.dp, y = (-30).dp)
+                .offset(x = 30.dp, y = (-20).dp)
                 .clip(CircleShape)
                 .background(HeaderNavyLighter)
         )
 
         Column(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 16.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.SpaceBetween
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             // Back + Module chip row
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (onBack != null) {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
+                    IconButton(onClick = onBack, modifier = Modifier.size(36.dp)) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White, modifier = Modifier.size(22.dp))
                     }
                 }
-            if (chipLabel.isNotEmpty()) {
-                Surface(
-                    shape = RoundedCornerShape(20.dp),
-                    color = Color.White.copy(alpha = 0.12f),
-                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.25f))
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                if (chipLabel.isNotEmpty()) {
+                    Surface(
+                        shape = RoundedCornerShape(20.dp),
+                        color = Color.White.copy(alpha = 0.12f),
+                        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.25f))
                     ) {
-                        if (moduleIcon != null) {
-                            Icon(moduleIcon, contentDescription = null, tint = Color.White, modifier = Modifier.size(14.dp))
+                        Row(
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            if (moduleIcon != null) {
+                                Icon(moduleIcon, contentDescription = null, tint = Color.White, modifier = Modifier.size(14.dp))
+                            }
+                            Text(
+                                chipLabel.uppercase(),
+                                style = MaterialTheme.typography.bodySmall.copy(
+                                    fontWeight = FontWeight.SemiBold,
+                                    letterSpacing = 0.8.sp
+                                ),
+                                color = Color.White
+                            )
                         }
-                        Text(
-                            chipLabel.uppercase(),
-                            style = MaterialTheme.typography.bodySmall.copy(
-                                fontWeight = FontWeight.SemiBold,
-                                letterSpacing = 0.8.sp
-                            ),
-                            color = Color.White
-                        )
                     }
                 }
             }
-            } // end Row
 
             // Title
-            Column {
+            Text(
+                title,
+                style = MaterialTheme.typography.headlineMedium,
+                color = Color.White,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            if (subtitle.isNotEmpty()) {
                 Text(
-                    title,
-                    style = MaterialTheme.typography.displayMedium,
-                    color = Color.White,
-                    maxLines = 2,
+                    subtitle,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = Color.White.copy(alpha = 0.6f),
+                    maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                if (subtitle.isNotEmpty()) {
-                    Text(
-                        subtitle,
-                        style = MaterialTheme.typography.labelMedium,
-                        color = Color.White.copy(alpha = 0.6f)
-                    )
-                }
             }
 
             // Stats bar
@@ -134,19 +133,19 @@ fun HeroHeader(
                             Box(
                                 modifier = Modifier
                                     .width(1.dp)
-                                    .height(28.dp)
+                                    .height(24.dp)
                                     .background(Color.White.copy(alpha = 0.2f))
                             )
                         }
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(
                                 value,
-                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold, fontSize = 18.sp),
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold, fontSize = 16.sp),
                                 color = Color.White
                             )
                             Text(
                                 label.uppercase(),
-                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
+                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
                                 color = TextMuted
                             )
                         }
@@ -325,6 +324,38 @@ fun StatusBadge(status: ConsultationStatus) {
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// CONSENT BADGE
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+@Composable
+fun ConsentBadge(consentGiven: Boolean?, modifier: Modifier = Modifier) {
+    val (text, bgColor, textColor, icon) = when (consentGiven) {
+        true -> listOf("CONSENT", StatusDoneBg, StatusDoneText, Icons.Default.CheckCircle)
+        false -> listOf("DECLINED", StatusAlertBg, StatusAlertText, Icons.Default.Cancel)
+        null -> listOf("PENDING", StatusAwaitingBg, StatusAwaitingText, Icons.Default.HelpOutline)
+    }
+    @Suppress("UNCHECKED_CAST")
+    Surface(
+        shape = RoundedCornerShape(20.dp),
+        color = bgColor as Color
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(3.dp)
+        ) {
+            Icon(icon as ImageVector, contentDescription = null, tint = textColor as Color, modifier = Modifier.size(12.dp))
+            Text(
+                text = text as String,
+                color = textColor,
+                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold, fontSize = 9.sp),
+                modifier = Modifier
+            )
+        }
+    }
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // DROPDOWN FIELD
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -492,18 +523,27 @@ fun StepProgressIndicator(
 fun SectionHeader(
     title: String,
     modifier: Modifier = Modifier,
-    moduleColor: Color = BrandPrimary
+    moduleColor: Color = BrandPrimary,
+    icon: ImageVector? = null
 ) {
     Column(modifier = modifier.padding(top = 12.dp, bottom = 4.dp)) {
-        Text(
-            title.uppercase(),
-            style = MaterialTheme.typography.labelSmall.copy(
-                fontWeight = FontWeight.SemiBold,
-                letterSpacing = 0.5.sp
-            ),
-            color = moduleColor
-        )
-        Spacer(modifier = Modifier.height(4.dp))
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.padding(vertical = 4.dp)
+        ) {
+            if (icon != null) {
+                Icon(icon, contentDescription = null, tint = moduleColor, modifier = Modifier.size(18.dp))
+            }
+            Text(
+                title.uppercase(),
+                style = MaterialTheme.typography.labelSmall.copy(
+                    fontWeight = FontWeight.SemiBold,
+                    letterSpacing = 0.5.sp
+                ),
+                color = moduleColor
+            )
+        }
         HorizontalDivider(thickness = 0.5.dp, color = moduleColor.copy(alpha = 0.3f))
     }
 }
