@@ -55,11 +55,11 @@ class HealthWorkerModuleViewModel(
     private val endCallUseCase: EndCallUseCase
 ) : ViewModel() {
 
-    private val _spokeName = MutableStateFlow("")
+    private val _spokeName = MutableStateFlow("Spoke Berasia")
     val spokeName: StateFlow<String> = _spokeName.asStateFlow()
-    private val _selectedDistrict = MutableStateFlow("")
+    private val _selectedDistrict = MutableStateFlow("Bhopal")
     val selectedDistrict: StateFlow<String> = _selectedDistrict.asStateFlow()
-    private val _selectedVillage = MutableStateFlow("")
+    private val _selectedVillage = MutableStateFlow("Berasia")
     val selectedVillage: StateFlow<String> = _selectedVillage.asStateFlow()
     private val _districts = MutableStateFlow<List<String>>(emptyList())
     val districts: StateFlow<List<String>> = _districts.asStateFlow()
@@ -163,7 +163,15 @@ class HealthWorkerModuleViewModel(
         _currentDateTime.value = LocalDateTime.now().format(DateTimeFormatter.ofPattern("EEE, dd MMM yyyy  •  hh:mm a"))
     }
     private fun loadData() {
-        viewModelScope.launch { _districts.value = getDistrictsUseCase(); _states.value = getStatesUseCase(); _recentPatients.value = getRecentPatientsUseCase() }
+        viewModelScope.launch {
+            _districts.value = getDistrictsUseCase()
+            _states.value = getStatesUseCase()
+            _recentPatients.value = getRecentPatientsUseCase()
+            // Load villages for the default prefilled district
+            if (_selectedDistrict.value.isNotBlank()) {
+                _villages.value = getVillagesUseCase(_selectedDistrict.value)
+            }
+        }
     }
     fun refreshDashboard() { viewModelScope.launch { _recentPatients.value = getRecentPatientsUseCase() } }
     fun setSpokeName(name: String) { _spokeName.value = name }
@@ -452,13 +460,110 @@ fun HWDashboardScreen(viewModel: HealthWorkerModuleViewModel, onNewPatient: () -
                 } else {
                     LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.weight(1f)) {
                         items(recentPatients) { patient ->
-                            PatientListCard(
-                                name = patient.fullName,
-                                id = patient.id,
-                                subtitle = "Age: ${patient.age} · ${patient.gender.name}",
-                                status = patient.status,
-                                onClick = { onPatientClick(patient.id) }
-                            )
+                            HWPatientCard(patient = patient, onClick = { onPatientClick(patient.id) })
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// ============ Enhanced Patient Card for HW Dashboard ============
+
+@Composable
+private fun HWPatientCard(patient: Patient, onClick: () -> Unit) {
+    Card(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = BackgroundCard),
+        elevation = CardDefaults.cardElevation(2.dp)
+    ) {
+        Column(modifier = Modifier.padding(14.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                // Avatar with initials
+                Surface(
+                    shape = CircleShape,
+                    color = HealthWorkerBg,
+                    modifier = Modifier.size(44.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Text(
+                            patient.fullName.split(" ").take(2).joinToString("") { it.first().uppercase() },
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = HealthWorkerColor
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(patient.fullName, style = MaterialTheme.typography.titleMedium, color = TextPrimary)
+                    Text("${patient.id} • ${patient.age}y ${patient.gender.name}", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+                }
+                StatusBadge(patient.status)
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Complaint
+            if (patient.medicalHistory.primaryComplaint.isNotBlank()) {
+                Row(
+                    modifier = Modifier.padding(bottom = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Icon(Icons.Default.MedicalInformation, contentDescription = null, tint = HealthWorkerColor, modifier = Modifier.size(16.dp))
+                    Text(patient.medicalHistory.primaryComplaint, style = MaterialTheme.typography.bodySmall, color = TextPrimary, maxLines = 1)
+                }
+            }
+
+            // Vitals summary row
+            patient.vitals.let { v ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(BackgroundPage, RoundedCornerShape(8.dp))
+                        .padding(8.dp),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("BP", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                        Text("${v.bpSystolic ?: "—"}/${v.bpDiastolic ?: "—"}", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
+                    }
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("SpO2", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                        Text("${v.spo2 ?: "—"}%", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
+                    }
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("Pulse", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                        Text("${v.pulseRate ?: "—"}", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
+                    }
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("Sugar", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                        Text("${v.bloodSugar?.toInt() ?: "—"}", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
+                    }
+                }
+            }
+
+            // Registration time
+            Spacer(modifier = Modifier.height(4.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Surface(shape = RoundedCornerShape(8.dp), color = HealthWorkerBg) {
+                    Row(modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Icon(Icons.Default.Schedule, contentDescription = null, tint = HealthWorkerColor, modifier = Modifier.size(13.dp))
+                        Text(patient.registeredAt, style = MaterialTheme.typography.labelSmall, color = HealthWorkerColor)
+                    }
+                }
+                if (patient.address.village.isNotBlank()) {
+                    Surface(shape = RoundedCornerShape(8.dp), color = BackgroundPage) {
+                        Row(modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Icon(Icons.Default.LocationOn, contentDescription = null, tint = TextMuted, modifier = Modifier.size(13.dp))
+                            Text(patient.address.village, style = MaterialTheme.typography.labelSmall, color = TextMuted)
                         }
                     }
                 }
