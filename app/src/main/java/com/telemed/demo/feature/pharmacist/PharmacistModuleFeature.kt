@@ -77,6 +77,7 @@ class PharmacistModuleViewModel(
 
     init {
         loadQueue()
+        loadPrescriptionData()
     }
 
     fun loadQueue() {
@@ -133,6 +134,11 @@ class PharmacistModuleViewModel(
             delay(500)
             _isLoading.value = false
         }
+    }
+
+    // Get doctor name from prescription (avoids hardcoded names)
+    fun getDoctorName(): String {
+        return _prescription.value?.doctorName ?: "Doctor"
     }
 
     // Dispensation status helpers
@@ -217,10 +223,17 @@ fun PharmacistQueueScreen(
 ) {
     val queue by viewModel.patientQueue.collectAsState()
 
-    LaunchedEffect(Unit) { viewModel.loadQueue() }
+    val prescription by viewModel.prescription.collectAsState()
+    val dispensedStatus by viewModel.dispensedStatus.collectAsState()
+    val medicines by viewModel.medicines.collectAsState()
+
+    LaunchedEffect(Unit) { viewModel.loadQueue(); viewModel.loadPrescriptionData() }
+
+    // Dispensation summary
+    val dispensedCount = medicines.count { dispensedStatus[it.name] == true }
+    val totalMedicines = medicines.size
 
     Scaffold(
-        topBar = { AppTopBar(title = stringResource(R.string.patient_queue), onBack = onBack) },
         containerColor = BackgroundPage
     ) { padding ->
         Column(
@@ -228,21 +241,19 @@ fun PharmacistQueueScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            // Module identity chip
-            Surface(
-                shape = RoundedCornerShape(20.dp),
-                color = PharmacistBg,
-                modifier = Modifier.padding(start = 16.dp, top = 12.dp, bottom = 4.dp)
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    Icon(Icons.Default.LocalPharmacy, contentDescription = null, tint = PharmacistColor, modifier = Modifier.size(16.dp))
-                    Text("Pharmacist", style = MaterialTheme.typography.labelSmall, color = PharmacistColor)
-                }
-            }
+            // Header with dispensation summary
+            HeroHeader(
+                title = stringResource(R.string.patient_queue),
+                subtitle = prescription?.let { "Rx: ${it.doctorName} • ${it.clinicName}" } ?: "Pharmacist Dashboard",
+                moduleChip = "Pharmacist",
+                moduleColor = PharmacistColor,
+                onBack = onBack,
+                stats = listOf(
+                    queue.size.toString() to "In Queue",
+                    "${queue.count { it.status == ConsultationStatus.WAITING }}" to "Waiting",
+                    if (totalMedicines > 0) "$dispensedCount/$totalMedicines" to "Dispensed" else "0" to "Dispensed"
+                )
+            )
 
             if (queue.isEmpty()) {
                 Box(
@@ -260,19 +271,131 @@ fun PharmacistQueueScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     items(queue) { item ->
-                        PatientListCard(
-                            name = item.patient.fullName,
-                            id = item.patient.id,
-                            subtitle = item.time,
+                        PharmacistPatientCard(
+                            patient = item.patient,
+                            time = item.time,
                             status = item.status,
+                            hasPrescription = prescription != null && prescription?.patientId == item.patient.id,
                             onClick = {
                                 viewModel.selectPatient(item.patient)
                                 onPatientSelect(item.patient.id)
                             }
                         )
+                    }
+                }
+            }
+        }
+    }
+}
+
+// ============ Enhanced Patient Card for Pharmacist Queue ============
+
+@Composable
+private fun PharmacistPatientCard(
+    patient: Patient,
+    time: String,
+    status: ConsultationStatus,
+    hasPrescription: Boolean,
+    onClick: () -> Unit
+) {
+    Card(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = BackgroundCard),
+        elevation = CardDefaults.cardElevation(2.dp)
+    ) {
+        Column(modifier = Modifier.padding(14.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Surface(
+                    shape = CircleShape,
+                    color = PharmacistBg,
+                    modifier = Modifier.size(44.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Text(
+                            patient.fullName.split(" ").take(2).joinToString("") { it.first().uppercase() },
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = PharmacistColor
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(patient.fullName, style = MaterialTheme.typography.titleMedium, color = TextPrimary)
+                    Text("${patient.id} • ${patient.age}y ${patient.gender.name}", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+                }
+                StatusBadge(status)
+            }
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            // Complaint
+            if (patient.medicalHistory.primaryComplaint.isNotBlank()) {
+                Row(
+                    modifier = Modifier.padding(bottom = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Icon(Icons.Default.MedicalInformation, contentDescription = null, tint = PharmacistColor, modifier = Modifier.size(15.dp))
+                    Text(patient.medicalHistory.primaryComplaint, style = MaterialTheme.typography.bodySmall, color = TextPrimary, maxLines = 1)
+                }
+            }
+
+            // Vitals summary
+            patient.vitals.let { v ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(BackgroundPage, RoundedCornerShape(8.dp))
+                        .padding(8.dp),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("BP", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                        Text("${v.bpSystolic ?: "—"}/${v.bpDiastolic ?: "—"}", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
+                    }
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("SpO2", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                        Text("${v.spo2 ?: "—"}%", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
+                    }
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("Pulse", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                        Text("${v.pulseRate ?: "—"}", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
+                    }
+                }
+            }
+
+            // Tags row
+            Spacer(modifier = Modifier.height(4.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Surface(shape = RoundedCornerShape(8.dp), color = PharmacistBg) {
+                    Row(modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Icon(Icons.Default.Schedule, contentDescription = null, tint = PharmacistColor, modifier = Modifier.size(13.dp))
+                        Text(time, style = MaterialTheme.typography.labelSmall, color = PharmacistColor)
+                    }
+                }
+                if (hasPrescription) {
+                    Surface(shape = RoundedCornerShape(8.dp), color = StatusDoneBg) {
+                        Row(modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Icon(Icons.Default.Description, contentDescription = null, tint = StatusDoneText, modifier = Modifier.size(13.dp))
+                            Text("Rx Ready", style = MaterialTheme.typography.labelSmall, color = StatusDoneText)
+                        }
+                    }
+                }
+                if (patient.address.village.isNotBlank()) {
+                    Surface(shape = RoundedCornerShape(8.dp), color = BackgroundPage) {
+                        Row(modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Icon(Icons.Default.LocationOn, contentDescription = null, tint = TextMuted, modifier = Modifier.size(13.dp))
+                            Text(patient.address.village, style = MaterialTheme.typography.labelSmall, color = TextMuted)
+                        }
                     }
                 }
             }
@@ -441,6 +564,8 @@ fun PharmacistVideoCallScreen(
         label = "pulse"
     )
 
+    val doctorName = viewModel.getDoctorName()
+
     Scaffold { padding ->
         Box(
             modifier = Modifier.fillMaxSize().padding(padding).background(CallDarkBg),
@@ -448,7 +573,7 @@ fun PharmacistVideoCallScreen(
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(24.dp)) {
                 DoctorAvatarImage(
-                    doctorName = "Dr. Priya Sharma",
+                    doctorName = doctorName,
                     modifier = Modifier.size(120.dp).then(if (isConnecting) Modifier.scale(pulseScale) else Modifier)
                 )
 
@@ -467,7 +592,7 @@ fun PharmacistVideoCallScreen(
                     Surface(modifier = Modifier.fillMaxWidth(0.85f).height(200.dp), shape = RoundedCornerShape(16.dp), color = HeaderNavyLighter) {
                         Box(contentAlignment = Alignment.Center) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                DoctorAvatarImage(doctorName = "Dr. Priya Sharma", modifier = Modifier.size(72.dp))
+                                DoctorAvatarImage(doctorName = doctorName, modifier = Modifier.size(72.dp))
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text("Video Call Active", color = Color.White.copy(alpha = 0.7f), style = MaterialTheme.typography.bodyMedium)
                             }
