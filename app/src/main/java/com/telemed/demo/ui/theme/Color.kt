@@ -3,17 +3,17 @@ package com.telemed.demo.ui.theme
 import androidx.compose.ui.graphics.Color
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// PRIMARY BRAND — HelpAge India
+// PRIMARY BRAND — HI Samagra
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-val BrandPrimary = Color(0xFFCE2227)          // HelpAge red
-val BrandPrimaryLight = Color(0xFFE04E52)
-val BrandPrimaryDark = Color(0xFF9A181C)
-val BrandPrimaryContainer = Color(0xFFFDE8E8) // light red bg
+val BrandPrimary = Color(0xFFF5B731)          // HI Samagra golden yellow
+val BrandPrimaryLight = Color(0xFFF7C44E)
+val BrandPrimaryDark = Color(0xFFD4960A)
+val BrandPrimaryContainer = Color(0xFFFFF8E1) // light yellow bg
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // BACKGROUNDS
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-val BackgroundPage = Color(0xFFF5F3F0)         // warm off-white
+val BackgroundPage = Color(0xFFFAF7F2)         // warm cream off-white
 val BackgroundCard = Color(0xFFFFFFFF)          // white cards
 val BackgroundDark = Color(0xFF1C1B1F)
 val SurfaceDark = Color(0xFF2C2B30)
@@ -21,8 +21,8 @@ val SurfaceDark = Color(0xFF2C2B30)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // HEADER / HERO
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-val HeaderNavy = Color(0xFF1A1A2E)             // deep navy
-val HeaderNavyLighter = Color(0xFF2D2D44)      // lighter for decorative circle
+val HeaderNavy = Color(0xFF2D2A26)             // dark charcoal (complements yellow)
+val HeaderNavyLighter = Color(0xFF3D3A35)      // lighter charcoal for decorative circle
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // ACCENT TEAL (Clinical trust — Doctor module)
@@ -42,11 +42,11 @@ val TextOnDark = Color(0xFFFFFFFF)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // MODULE IDENTITY COLORS
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-val HealthWorkerColor = Color(0xFFCE2227)      // HelpAge red — field/grassroots
+val HealthWorkerColor = Color(0xFFD4960A)      // deep gold — field/grassroots
 val PharmacistColor = Color(0xFF7B5EA7)        // muted violet — dispensary
 val DoctorColor = Color(0xFF0B6E6E)            // clinical teal — medical authority
 
-val HealthWorkerBg = Color(0xFFFDE8E8)
+val HealthWorkerBg = Color(0xFFFFF8E1)
 val PharmacistBg = Color(0xFFF3EDF9)
 val DoctorBg = Color(0xFFE0F2F2)
 
@@ -91,10 +91,10 @@ val CardShadow = Color(0x14000000)             // rgba(0,0,0,0.08)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // FORM SPECIAL
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-val DateFieldBg = Color(0xFFFFF8F0)
-val DateFieldBorder = Color(0xFFF0D9C0)
-val UniqueIdBg = Color(0xFFFDE8E8)
-val UniqueIdBorder = Color(0xFFCE2227)
+val DateFieldBg = Color(0xFFFFF8E1)
+val DateFieldBorder = Color(0xFFF5B731)
+val UniqueIdBg = Color(0xFFFFF8E1)
+val UniqueIdBorder = Color(0xFFF5B731)
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // INACTIVE / STEP
@@ -105,7 +105,7 @@ val InactiveTabText = Color(0xFF9E9E9E)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // CALL SCREEN BACKGROUNDS
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-val CallDarkBg = Color(0xFF1A1A2E)
+val CallDarkBg = Color(0xFF2D2A26)
 val CallAcceptGreen = Color(0xFF2E7D32)
 val CallDeclineRed = Color(0xFFC0392B)
 

@@ -56,7 +56,7 @@ fun RoleSelectionScreen(
                     .padding(horizontal = 16.dp, vertical = 24.dp),
                 verticalArrangement = Arrangement.Bottom
             ) {
-                // HelpAge app icon
+                // HI Samagra app icon
                 Surface(
                     shape = RoundedCornerShape(12.dp),
                     color = BrandPrimary,
@@ -64,9 +64,9 @@ fun RoleSelectionScreen(
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
-                            Icons.Default.VolunteerActivism,
+                            Icons.Default.TrendingUp,
                             contentDescription = null,
-                            tint = Color.White,
+                            tint = Color(0xFF1A1A1A),
                             modifier = Modifier.size(28.dp)
                         )
                     }

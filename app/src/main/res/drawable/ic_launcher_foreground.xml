@@ -4,34 +4,60 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Outer circle (white ring) -->
+
+    <!-- Person figure - head (circle) -->
     <path
-        android:fillColor="#FFFFFF"
-        android:fillAlpha="0.95"
-        android:pathData="M54,54m-28,0a28,28 0,1 1,56 0a28,28 0,1 1,-56 0" />
-    <!-- Inner circle (red) -->
+        android:fillColor="#1A1A1A"
+        android:pathData="M52,30m-5,0a5,5 0,1 1,10 0a5,5 0,1 1,-10 0" />
+
+    <!-- Person figure - curved body leaning forward with walking stick -->
     <path
-        android:fillColor="#CE2227"
-        android:pathData="M54,54m-22,0a22,22 0,1 1,44 0a22,22 0,1 1,-44 0" />
-    <!-- Helping hand icon - palm -->
+        android:fillColor="#1A1A1A"
+        android:pathData="M52,36 C52,36 48,40 46,48 C44,56 44,58 44,62 L48,62 L48,58 C48,54 50,46 52,42 C54,46 55,50 55,52 L55,62 L59,62 L59,50 C59,44 56,38 52,36 Z" />
+
+    <!-- Walking stick -->
     <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M48,62 L48,48 C48,46 49,45 51,45 C53,45 54,46 54,48 L54,52 L54,44 C54,42 55,41 57,41 C59,41 60,42 60,44 L60,51 L60,46 C60,44 61,43 63,43 C65,43 66,44 66,46 L66,56 C66,62 62,66 56,66 L52,66 C49,66 48,65 48,62 Z" />
-    <!-- Heart above hand -->
+        android:fillColor="#1A1A1A"
+        android:pathData="M43,50 L43,68 L46,68 L46,50 Z" />
+
+    <!-- Bar chart - bar 1 (smallest) -->
     <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M54,42 C54,39 51,37 49,39 C47,41 49,44 54,47 C59,44 61,41 59,39 C57,37 54,39 54,42 Z" />
-    <!-- Signal waves (telemedicine) -->
+        android:fillColor="#1A1A1A"
+        android:pathData="M56,58 L60,58 L60,68 L56,68 Z" />
+
+    <!-- Bar chart - bar 2 (medium) -->
+    <path
+        android:fillColor="#1A1A1A"
+        android:pathData="M62,52 L66,52 L66,68 L62,68 Z" />
+
+    <!-- Bar chart - bar 3 (tallest) -->
+    <path
+        android:fillColor="#1A1A1A"
+        android:pathData="M68,45 L72,45 L72,68 L68,68 Z" />
+
+    <!-- Growth arrow -->
     <path
         android:fillColor="#00000000"
-        android:pathData="M70,40 Q74,44 74,50"
-        android:strokeWidth="2"
-        android:strokeColor="#FFFFFF"
-        android:strokeAlpha="0.7" />
+        android:pathData="M58,56 L64,48 L70,40"
+        android:strokeWidth="2.5"
+        android:strokeColor="#1A1A1A"
+        android:strokeLineCap="round" />
+
+    <!-- Arrow head -->
     <path
-        android:fillColor="#00000000"
-        android:pathData="M74,37 Q80,44 80,52"
-        android:strokeWidth="2"
-        android:strokeColor="#FFFFFF"
-        android:strokeAlpha="0.4" />
+        android:fillColor="#1A1A1A"
+        android:pathData="M67,38 L72,38 L72,43 L70,41 L67,38 Z" />
+
+    <!-- Text: HI Samagra -->
+    <path
+        android:fillColor="#1A1A1A"
+        android:pathData="M34,74 L34,80 L36,80 L36,77.5 L39,77.5 L39,80 L41,80 L41,74 L39,74 L39,76.5 L36,76.5 L36,74 Z" />
+    <path
+        android:fillColor="#1A1A1A"
+        android:pathData="M43,74 L43,80 L45,80 L45,74 Z" />
+
+    <!-- "Samagra" text approximation -->
+    <path
+        android:fillColor="#1A1A1A"
+        android:pathData="M49,75.5 C49,74.5 50,74 51.5,74 C53,74 54,74.5 54,75.5 L54,76 L52.5,76 C52.5,75.5 52,75.2 51.5,75.2 C51,75.2 50.5,75.4 50.5,75.8 C50.5,76.2 51,76.4 52,76.6 C53.5,77 54,77.5 54,78.5 C54,79.5 53,80.2 51.5,80.2 C50,80.2 49,79.5 49,78.5 L49,78 L50.5,78 C50.5,78.6 51,79 51.5,79 C52,79 52.5,78.8 52.5,78.3 C52.5,77.8 52,77.6 51,77.4 C49.5,77 49,76.5 49,75.5 Z" />
 </vector>
