@@ -296,9 +296,25 @@ fun AppNavHost(
             PharmacistVideoCallScreen(
                 viewModel = vm,
                 onCallEnded = {
-                    navController.navigate(AppDestination.PharmacistDispense.route) {
+                    navController.navigate(AppDestination.PharmacistPrescriptionView.route) {
                         popUpTo(AppDestination.PharmacistQueue.route) { inclusive = false }
                     }
+                },
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(AppDestination.PharmacistPrescriptionView.route) {
+            val vm: PharmacistModuleViewModel = viewModel(
+                viewModelStoreOwner = remember(navController) {
+                    navController.getBackStackEntry(AppDestination.PharmacistQueue.route)
+                },
+                factory = factory
+            )
+            PharmacistPrescriptionViewScreen(
+                viewModel = vm,
+                onDispenseMedicines = {
+                    navController.navigate(AppDestination.PharmacistDispense.route)
                 },
                 onBack = { navController.popBackStack() }
             )

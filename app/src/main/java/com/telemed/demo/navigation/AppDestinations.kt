@@ -27,6 +27,7 @@ sealed class AppDestination(val route: String) {
         fun createRoute(patientId: String) = "pharmacist_consent/$patientId"
     }
     data object PharmacistVideoCall : AppDestination("pharmacist_video_call")
+    data object PharmacistPrescriptionView : AppDestination("pharmacist_prescription_view")
     data object PharmacistDispense : AppDestination("pharmacist_dispense")
 
     // Doctor flow
