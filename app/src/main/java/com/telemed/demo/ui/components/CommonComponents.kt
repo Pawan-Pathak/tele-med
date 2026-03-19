@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.telemed.demo.domain.model.ConsultationStatus
+import com.telemed.demo.domain.model.Patient
 import com.telemed.demo.ui.theme.*
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -617,6 +618,222 @@ fun PatientListCard(
             }
             StatusBadge(status)
             Icon(Icons.Default.ChevronRight, contentDescription = null, tint = TextMuted, modifier = Modifier.size(20.dp))
+        }
+    }
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// UNIFIED PATIENT CARD (Shared across all 3 flows)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+enum class PatientCardFlow {
+    HEALTH_WORKER, DOCTOR, PHARMACIST
+}
+
+@Composable
+fun UnifiedPatientCard(
+    patient: Patient,
+    status: ConsultationStatus,
+    flow: PatientCardFlow,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    line3Text: String? = null,
+    line4Text: String? = null,
+    line4IsWarning: Boolean = false,
+    onConsentClick: (() -> Unit)? = null,
+    onAccept: (() -> Unit)? = null,
+    onDecline: (() -> Unit)? = null
+) {
+    val moduleColor = when (flow) {
+        PatientCardFlow.HEALTH_WORKER -> HealthWorkerColor
+        PatientCardFlow.DOCTOR -> DoctorColor
+        PatientCardFlow.PHARMACIST -> PharmacistColor
+    }
+    val moduleBg = when (flow) {
+        PatientCardFlow.HEALTH_WORKER -> HealthWorkerBg
+        PatientCardFlow.DOCTOR -> DoctorBg
+        PatientCardFlow.PHARMACIST -> PharmacistBg
+    }
+
+    val initials = patient.fullName
+        .takeIf { it.isNotBlank() }
+        ?.split(" ")
+        ?.take(2)
+        ?.joinToString("") { it.first().uppercase() }
+        ?: "?"
+
+    val secondaryParts = buildList {
+        if (patient.age > 0) add("${patient.age}y")
+        add(patient.gender.name)
+        if (patient.id.isNotBlank()) add(patient.id)
+    }
+    val secondaryText = secondaryParts.joinToString(" \u2022 ")
+
+    Card(
+        onClick = onClick,
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = BackgroundCard),
+        elevation = CardDefaults.cardElevation(2.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            // Row 1: Avatar + Name column + Status badge
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Surface(
+                    shape = CircleShape,
+                    color = moduleBg,
+                    modifier = Modifier.size(48.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Text(
+                            initials,
+                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                            color = moduleColor
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        patient.fullName,
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp
+                        ),
+                        color = TextPrimary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    if (secondaryText.isNotBlank()) {
+                        Text(
+                            secondaryText,
+                            style = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp),
+                            color = TextSecondary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.width(8.dp))
+                StatusBadge(status)
+            }
+
+            // Line 3: Complaint or Rx info (conditional)
+            if (!line3Text.isNullOrBlank()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Icon(
+                        if (flow == PatientCardFlow.PHARMACIST) Icons.Default.Medication
+                        else Icons.Default.MedicalInformation,
+                        contentDescription = null,
+                        tint = moduleColor,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Text(
+                        line3Text,
+                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp),
+                        color = TextPrimary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+
+            // Line 4: Visit date, queue info, or allergy warning (conditional)
+            if (!line4Text.isNullOrBlank()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                if (line4IsWarning) {
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = StatusAlertBg
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(Icons.Default.Warning, contentDescription = null, tint = StatusAlertText, modifier = Modifier.size(14.dp))
+                            Text(
+                                line4Text,
+                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+                                color = StatusAlertText,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+                } else {
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = moduleBg
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(Icons.Default.Schedule, contentDescription = null, tint = moduleColor, modifier = Modifier.size(13.dp))
+                            Text(
+                                line4Text,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = moduleColor,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+                }
+            }
+
+            // HW flow: Consent button when pending
+            if (flow == PatientCardFlow.HEALTH_WORKER && patient.consentGiven == null && onConsentClick != null) {
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedButton(
+                    onClick = onConsentClick,
+                    modifier = Modifier.fillMaxWidth().height(36.dp),
+                    shape = RoundedCornerShape(18.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = moduleColor),
+                    border = BorderStroke(1.dp, moduleColor)
+                ) {
+                    Icon(Icons.Default.HowToReg, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Take Consent", style = MaterialTheme.typography.labelMedium)
+                }
+            }
+
+            // Doctor flow: Accept/Decline buttons
+            if (flow == PatientCardFlow.DOCTOR && onAccept != null) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Button(
+                        onClick = onAccept,
+                        modifier = Modifier.weight(1f).height(40.dp),
+                        shape = RoundedCornerShape(20.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = CallAcceptGreen)
+                    ) {
+                        Icon(Icons.Default.Call, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Answer", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold))
+                    }
+                    OutlinedButton(
+                        onClick = onDecline ?: {},
+                        modifier = Modifier.weight(1f).height(40.dp),
+                        shape = RoundedCornerShape(20.dp),
+                        border = BorderStroke(1.dp, StatusAlertText)
+                    ) {
+                        Text("Decline", style = MaterialTheme.typography.labelMedium, color = StatusAlertText)
+                    }
+                }
+            }
         }
     }
 }
