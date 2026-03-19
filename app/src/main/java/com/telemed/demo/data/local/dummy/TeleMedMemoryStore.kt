@@ -86,7 +86,8 @@ class TeleMedMemoryStore {
                 ),
                 registeredBy = "Spoke Berasia",
                 registeredAt = now.minusHours(2).format(formatter),
-                status = ConsultationStatus.WAITING
+                status = ConsultationStatus.WAITING,
+                consentGiven = true
             ),
             Patient(
                 id = "ASHA-20260316-0002",
@@ -105,9 +106,10 @@ class TeleMedMemoryStore {
                     listOf("None"),
                     LifestyleHistory()
                 ),
-                registeredBy = "Spoke Phanda",
+                registeredBy = "Spoke Berasia",
                 registeredAt = now.minusHours(1).format(formatter),
-                status = ConsultationStatus.WAITING
+                status = ConsultationStatus.WAITING,
+                consentGiven = true
             ),
             Patient(
                 id = "ASHA-20260316-0003",
@@ -126,9 +128,10 @@ class TeleMedMemoryStore {
                     listOf("Diabetes", "Heart Disease"),
                     LifestyleHistory(true, true, false)
                 ),
-                registeredBy = "Spoke Sanwer",
+                registeredBy = "Spoke Berasia",
                 registeredAt = now.minusMinutes(45).format(formatter),
-                status = ConsultationStatus.IN_PROGRESS
+                status = ConsultationStatus.IN_PROGRESS,
+                consentGiven = true
             ),
             Patient(
                 id = "ASHA-20260316-0004",
@@ -147,10 +150,10 @@ class TeleMedMemoryStore {
                     listOf("None"),
                     LifestyleHistory()
                 ),
-                registeredBy = "Spoke Ashta",
+                registeredBy = "Spoke Berasia",
                 registeredAt = now.minusMinutes(30).format(formatter),
                 status = ConsultationStatus.REGISTERED
-            ),
+            ),  // consent not yet asked
             Patient(
                 id = "ASHA-20260316-0005",
                 fullName = "Vijay Singh",
@@ -168,9 +171,10 @@ class TeleMedMemoryStore {
                     listOf("Hypertension"),
                     LifestyleHistory(false, false, false)
                 ),
-                registeredBy = "Spoke Depalpur",
+                registeredBy = "Spoke Berasia",
                 registeredAt = now.minusMinutes(15).format(formatter),
-                status = ConsultationStatus.COMPLETED
+                status = ConsultationStatus.COMPLETED,
+                consentGiven = true
             ),
             Patient(
                 id = "ASHA-20260315-0006",
@@ -189,9 +193,10 @@ class TeleMedMemoryStore {
                     listOf("TB"),
                     LifestyleHistory()
                 ),
-                registeredBy = "Spoke Ichhawar",
+                registeredBy = "Spoke Berasia",
                 registeredAt = now.minusDays(1).format(formatter),
-                status = ConsultationStatus.COMPLETED
+                status = ConsultationStatus.COMPLETED,
+                consentGiven = true
             ),
             Patient(
                 id = "ASHA-20260315-0007",
@@ -210,9 +215,10 @@ class TeleMedMemoryStore {
                     listOf("Diabetes"),
                     LifestyleHistory(true, false, false)
                 ),
-                registeredBy = "Spoke Mhow",
+                registeredBy = "Spoke Berasia",
                 registeredAt = now.minusDays(1).format(formatter),
-                status = ConsultationStatus.COMPLETED
+                status = ConsultationStatus.COMPLETED,
+                consentGiven = true
             )
         ))
 

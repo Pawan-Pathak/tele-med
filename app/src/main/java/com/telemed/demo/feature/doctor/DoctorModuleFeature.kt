@@ -31,6 +31,7 @@ import com.telemed.demo.domain.repository.MockDataRepository
 import com.telemed.demo.domain.usecase.*
 import com.telemed.demo.ui.components.*
 import com.telemed.demo.ui.responsive.AppTopBar
+import com.telemed.demo.ui.responsive.responsiveHorizontalPadding
 import com.telemed.demo.ui.theme.*
 import com.telemed.demo.feature.healthworker.DoctorAvatarImage
 import kotlinx.coroutines.delay
@@ -207,11 +208,11 @@ fun DoctorLoginScreen(
                 .fillMaxSize()
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
-                .padding(24.dp),
+                .padding(horizontal = 24.dp, vertical = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             Surface(
                 shape = CircleShape,
@@ -289,7 +290,7 @@ fun DoctorQueueScreen(
                 }
             } else {
                 LazyColumn(
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    modifier = Modifier.padding(horizontal = responsiveHorizontalPadding(), vertical = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     items(queue) { item ->
@@ -353,6 +354,7 @@ fun DoctorQueueScreen(
                                             }
                                         }
                                     }
+                                    ConsentBadge(consentGiven = item.patient.consentGiven)
                                 }
 
                                 Spacer(modifier = Modifier.height(4.dp))
@@ -564,7 +566,7 @@ fun DoctorConsultationScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                    .padding(horizontal = responsiveHorizontalPadding(), vertical = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 SelectableChip(
@@ -585,7 +587,7 @@ fun DoctorConsultationScreen(
                     val patient = selectedPatient
                     if (patient != null) {
                         Column(
-                            modifier = Modifier.verticalScroll(rememberScrollState()).padding(16.dp),
+                            modifier = Modifier.verticalScroll(rememberScrollState()).padding(horizontal = responsiveHorizontalPadding(), vertical = 16.dp),
                             verticalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
                             // Patient header card
@@ -602,7 +604,7 @@ fun DoctorConsultationScreen(
 
                             Spacer(modifier = Modifier.height(8.dp))
 
-                            SectionHeader(stringResource(R.string.vitals_summary), moduleColor = DoctorColor)
+                            SectionHeader(stringResource(R.string.vitals_summary), moduleColor = DoctorColor, icon = Icons.Default.MonitorHeart)
 
                             // Vitals grid
                             Row(
@@ -625,22 +627,22 @@ fun DoctorConsultationScreen(
 
                             Spacer(modifier = Modifier.height(8.dp))
 
-                            SectionHeader("Chief Complaint", moduleColor = DoctorColor)
+                            SectionHeader("Chief Complaint", moduleColor = DoctorColor, icon = Icons.Default.Report)
                             Text(patient.medicalHistory.primaryComplaint, style = MaterialTheme.typography.bodyLarge, color = TextPrimary)
 
                             Spacer(modifier = Modifier.height(4.dp))
 
-                            SectionHeader("Symptoms", moduleColor = DoctorColor)
+                            SectionHeader("Symptoms", moduleColor = DoctorColor, icon = Icons.Default.Healing)
                             Text(patient.medicalHistory.symptoms.joinToString(", ").ifEmpty { "None" }, style = MaterialTheme.typography.bodyMedium, color = TextPrimary)
 
                             Spacer(modifier = Modifier.height(4.dp))
 
-                            SectionHeader("Known Conditions", moduleColor = DoctorColor)
+                            SectionHeader("Known Conditions", moduleColor = DoctorColor, icon = Icons.Default.MedicalInformation)
                             Text(patient.medicalHistory.knownConditions.joinToString(", ").ifEmpty { "None" }, style = MaterialTheme.typography.bodyMedium, color = TextPrimary)
 
                             Spacer(modifier = Modifier.height(4.dp))
 
-                            SectionHeader("Lifestyle", moduleColor = DoctorColor)
+                            SectionHeader("Lifestyle", moduleColor = DoctorColor, icon = Icons.Default.FitnessCenter)
                             val lifestyle = patient.medicalHistory.lifestyle
                             val ls = mutableListOf<String>()
                             if (lifestyle.alcohol) ls.add("Alcohol")
@@ -650,7 +652,7 @@ fun DoctorConsultationScreen(
 
                             Spacer(modifier = Modifier.height(4.dp))
 
-                            SectionHeader("Documents", moduleColor = DoctorColor)
+                            SectionHeader("Documents", moduleColor = DoctorColor, icon = Icons.Default.Description)
                             Text("${patient.documents.size} file(s) uploaded", style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
                         }
                     }
@@ -661,20 +663,20 @@ fun DoctorConsultationScreen(
                         modifier = Modifier
                             .weight(1f)
                             .verticalScroll(rememberScrollState())
-                            .padding(16.dp),
+                            .padding(horizontal = responsiveHorizontalPadding(), vertical = 16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         // Section A: Chief Complaints
-                        SectionHeader("A. ${stringResource(R.string.chief_complaints)}", moduleColor = DoctorColor)
+                        SectionHeader("A. ${stringResource(R.string.chief_complaints)}", moduleColor = DoctorColor, icon = Icons.Default.Report)
                         LargeTextField(value = chiefComplaints, onValueChange = viewModel::setChiefComplaints, label = stringResource(R.string.chief_complaints), singleLine = false, minLines = 2)
 
                         // Section B: Diagnosis
-                        SectionHeader("B. ${stringResource(R.string.diagnosis)}", moduleColor = DoctorColor)
+                        SectionHeader("B. ${stringResource(R.string.diagnosis)}", moduleColor = DoctorColor, icon = Icons.Default.Biotech)
                         LargeTextField(value = diagnosis, onValueChange = viewModel::setDiagnosis, label = stringResource(R.string.diagnosis), singleLine = false, minLines = 2)
                         LargeTextField(value = icdCode, onValueChange = viewModel::setIcdCode, label = stringResource(R.string.icd_code))
 
                         // Section C: Treatment Plan
-                        SectionHeader("C. ${stringResource(R.string.treatment_plan)}", moduleColor = DoctorColor)
+                        SectionHeader("C. ${stringResource(R.string.treatment_plan)}", moduleColor = DoctorColor, icon = Icons.Default.Medication)
                         medicines.forEachIndexed { index, medicine ->
                             Card(
                                 modifier = Modifier.fillMaxWidth(),
@@ -718,7 +720,7 @@ fun DoctorConsultationScreen(
                         }
 
                         // Section D: Lab Tests
-                        SectionHeader("D. ${stringResource(R.string.lab_tests)}", moduleColor = DoctorColor)
+                        SectionHeader("D. ${stringResource(R.string.lab_tests)}", moduleColor = DoctorColor, icon = Icons.Default.Science)
                         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             viewModel.labTests.forEach { test ->
                                 SelectableChip(text = test, selected = selectedLabTests.contains(test), onClick = { viewModel.toggleLabTest(test) })
@@ -726,7 +728,7 @@ fun DoctorConsultationScreen(
                         }
 
                         // Section E: Other Clinical Info
-                        SectionHeader("E. Other Clinical Info", moduleColor = DoctorColor)
+                        SectionHeader("E. Other Clinical Info", moduleColor = DoctorColor, icon = Icons.Default.Notes)
                         LargeTextField(value = imagingNotes, onValueChange = viewModel::setImagingNotes, label = stringResource(R.string.imaging_notes), singleLine = false, minLines = 2)
                         LargeTextField(value = procedures, onValueChange = viewModel::setProcedures, label = stringResource(R.string.procedures))
                         LargeTextField(value = allergies, onValueChange = viewModel::setAllergies, label = stringResource(R.string.allergies))
@@ -800,7 +802,7 @@ fun DoctorPrescriptionPreviewScreen(
                     modifier = Modifier
                         .weight(1f)
                         .verticalScroll(rememberScrollState())
-                        .padding(16.dp),
+                        .padding(horizontal = responsiveHorizontalPadding(), vertical = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     // Prescription ready card
@@ -830,14 +832,14 @@ fun DoctorPrescriptionPreviewScreen(
                     Spacer(modifier = Modifier.height(8.dp))
 
                     // Patient info
-                    SectionHeader("Patient", moduleColor = DoctorColor)
+                    SectionHeader("Patient", moduleColor = DoctorColor, icon = Icons.Default.Person)
                     PatientSummaryCard("Name", rx.patientName)
                     PatientSummaryCard("ID", rx.patientId)
                     PatientSummaryCard("Age/Gender", "${rx.patientAge}y / ${rx.patientGender}")
 
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = DividerColor)
 
-                    SectionHeader("Diagnosis", moduleColor = DoctorColor)
+                    SectionHeader("Diagnosis", moduleColor = DoctorColor, icon = Icons.Default.Biotech)
                     Text(rx.diagnosis.ifEmpty { "—" }, style = MaterialTheme.typography.bodyLarge, color = TextPrimary)
                     Text("Chief Complaints: ${rx.chiefComplaints}", style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
 
@@ -867,19 +869,19 @@ fun DoctorPrescriptionPreviewScreen(
 
                     if (rx.labTests.isNotEmpty()) {
                         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = DividerColor)
-                        SectionHeader("Lab Tests Advised", moduleColor = DoctorColor)
+                        SectionHeader("Lab Tests Advised", moduleColor = DoctorColor, icon = Icons.Default.Science)
                         rx.labTests.forEach { test -> Text("• $test", style = MaterialTheme.typography.bodyMedium, color = TextPrimary) }
                     }
 
                     if (rx.recommendations.isNotBlank()) {
                         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = DividerColor)
-                        SectionHeader("Recommendations", moduleColor = DoctorColor)
+                        SectionHeader("Recommendations", moduleColor = DoctorColor, icon = Icons.Default.Recommend)
                         Text(rx.recommendations, style = MaterialTheme.typography.bodyMedium, color = TextPrimary)
                     }
 
                     if (rx.referral != null) {
                         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = DividerColor)
-                        SectionHeader("Referral", moduleColor = DoctorColor)
+                        SectionHeader("Referral", moduleColor = DoctorColor, icon = Icons.Default.Send)
                         Text("Specialty: ${rx.referral.specialty}", style = MaterialTheme.typography.bodyMedium, color = TextPrimary)
                         Text("Reason: ${rx.referral.reason}", style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
                     }
@@ -956,7 +958,7 @@ fun DoctorPrescriptionPreviewScreen(
                                         modifier = Modifier.size(40.dp)
                                     ) {
                                         Box(contentAlignment = Alignment.Center) {
-                                            Icon(Icons.Default.Chat, contentDescription = null, tint = Color.White, modifier = Modifier.size(22.dp))
+                                            Icon(Icons.Default.Forum, contentDescription = null, tint = Color.White, modifier = Modifier.size(22.dp))
                                         }
                                     }
                                     Column(modifier = Modifier.weight(1f)) {
@@ -988,7 +990,7 @@ fun DoctorPrescriptionPreviewScreen(
                                         modifier = Modifier.size(40.dp)
                                     ) {
                                         Box(contentAlignment = Alignment.Center) {
-                                            Icon(Icons.Default.Message, contentDescription = null, tint = Color.White, modifier = Modifier.size(22.dp))
+                                            Icon(Icons.Default.ChatBubble, contentDescription = null, tint = Color.White, modifier = Modifier.size(22.dp))
                                         }
                                     }
                                     Column(modifier = Modifier.weight(1f)) {
@@ -1020,7 +1022,7 @@ fun DoctorPrescriptionPreviewScreen(
                                         modifier = Modifier.size(40.dp)
                                     ) {
                                         Box(contentAlignment = Alignment.Center) {
-                                            Icon(Icons.Default.Mms, contentDescription = null, tint = Color.White, modifier = Modifier.size(22.dp))
+                                            Icon(Icons.Default.Image, contentDescription = null, tint = Color.White, modifier = Modifier.size(22.dp))
                                         }
                                     }
                                     Column(modifier = Modifier.weight(1f)) {

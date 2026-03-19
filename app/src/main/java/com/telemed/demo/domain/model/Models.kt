@@ -79,7 +79,8 @@ data class Patient(
     val documents: List<DocumentFile> = emptyList(),
     val registeredBy: String = "",
     val registeredAt: String = "",
-    val status: ConsultationStatus = ConsultationStatus.REGISTERED
+    val status: ConsultationStatus = ConsultationStatus.REGISTERED,
+    val consentGiven: Boolean? = null // null = not asked, true = given, false = declined
 )
 
 data class Doctor(
