@@ -492,7 +492,10 @@ fun HWDashboardScreen(viewModel: HealthWorkerModuleViewModel, onNewPatient: () -
                                 flow = PatientCardFlow.HEALTH_WORKER,
                                 onClick = { onPatientClick(patient.id) },
                                 line3Text = patient.medicalHistory.primaryComplaint.takeIf { it.isNotBlank() },
-                                line4Text = patient.registeredAt.takeIf { it.isNotBlank() },
+                                dateText = patient.registeredAt.takeIf { it.isNotBlank() },
+                                villageName = patient.address.village.takeIf { it.isNotBlank() },
+                                showConsentBadge = true,
+                                consentGiven = patient.consentGiven,
                                 onConsentClick = if (patient.consentGiven == null) {{ onConsentClick(patient.id) }} else null
                             )
                         }
