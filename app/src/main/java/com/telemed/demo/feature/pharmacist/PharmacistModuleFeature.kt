@@ -288,10 +288,15 @@ fun PharmacistConsentScreen(
     patientId: String,
     onConsentYes: () -> Unit,
     onConsentNo: () -> Unit,
+    onViewPrescription: () -> Unit,
+    onDispenseMedicines: () -> Unit,
     onBack: () -> Unit
 ) {
     val selectedPatient by viewModel.selectedPatient.collectAsState()
+    val prescription by viewModel.prescription.collectAsState()
     val patient = selectedPatient
+
+    LaunchedEffect(Unit) { viewModel.loadPrescriptionData() }
 
     Scaffold(
         topBar = { AppTopBar(title = stringResource(R.string.patient_consent), onBack = onBack) },
@@ -316,7 +321,7 @@ fun PharmacistConsentScreen(
                         Text(patient.fullName, style = MaterialTheme.typography.headlineSmall, color = TextPrimary)
                         Text("ID: ${patient.id}", style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
                         Spacer(modifier = Modifier.height(8.dp))
-                        Text("Age: ${patient.age} • ${patient.gender.name}", style = MaterialTheme.typography.bodyLarge, color = TextPrimary)
+                        Text("Age: ${patient.age} \u2022 ${patient.gender.name}", style = MaterialTheme.typography.bodyLarge, color = TextPrimary)
                         if (patient.medicalHistory.primaryComplaint.isNotEmpty()) {
                             Spacer(modifier = Modifier.height(4.dp))
                             Text("Complaint: ${patient.medicalHistory.primaryComplaint}", style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
@@ -325,7 +330,51 @@ fun PharmacistConsentScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            // Show prescription actions if prescription exists
+            if (prescription != null) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = StatusDoneBg),
+                    elevation = CardDefaults.cardElevation(2.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Icon(Icons.Default.CheckCircle, contentDescription = null, tint = StatusDoneText, modifier = Modifier.size(22.dp))
+                            Text("Prescription Available", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold), color = StatusDoneText)
+                        }
+                        Text("${prescription!!.doctorName} \u2022 ${prescription!!.clinicName}", style = MaterialTheme.typography.bodySmall, color = StatusDoneText.copy(alpha = 0.8f))
+                        Text("${prescription!!.medicines.size} medicines prescribed \u2022 ${prescription!!.date}", style = MaterialTheme.typography.bodySmall, color = StatusDoneText.copy(alpha = 0.8f))
+
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            OutlinedButton(
+                                onClick = onViewPrescription,
+                                modifier = Modifier.weight(1f).height(44.dp),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Icon(Icons.Default.Description, contentDescription = null, tint = PharmacistColor, modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("View Rx", color = PharmacistColor, style = MaterialTheme.typography.labelLarge)
+                            }
+                            Button(
+                                onClick = onDispenseMedicines,
+                                modifier = Modifier.weight(1f).height(44.dp),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = PharmacistColor)
+                            ) {
+                                Icon(Icons.Default.LocalPharmacy, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Dispense", style = MaterialTheme.typography.labelLarge)
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
 
             Card(
                 modifier = Modifier.fillMaxWidth(),
