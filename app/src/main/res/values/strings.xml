@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">HelpAge TeleMed</string>
+    <string name="app_name">HI Samagra</string>
 
     <!-- Role Selection -->
     <string name="select_role">Select Your Role</string>
@@ -10,7 +10,7 @@
     <string name="role_hw_desc">Register patients and collect vitals</string>
     <string name="role_pharmacist_desc">Manage consent and dispense medicines</string>
     <string name="role_doctor_desc">Consult patients and prescribe treatment</string>
-    <string name="app_tagline">Telemedicine for Rural Healthcare</string>
+    <string name="app_tagline">Integrated Healthcare for All</string>
 
     <!-- Common -->
     <string name="login">Login</string>

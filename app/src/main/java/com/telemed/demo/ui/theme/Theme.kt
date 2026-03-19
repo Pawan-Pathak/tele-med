@@ -12,7 +12,7 @@ import androidx.compose.ui.unit.dp
 
 private val LightColorScheme = lightColorScheme(
     primary = BrandPrimary,
-    onPrimary = Color.White,
+    onPrimary = Color(0xFF1A1A1A),
     primaryContainer = BrandPrimaryContainer,
     onPrimaryContainer = BrandPrimaryDark,
     secondary = AccentTeal,
@@ -35,7 +35,7 @@ private val LightColorScheme = lightColorScheme(
 
 private val DarkColorScheme = darkColorScheme(
     primary = BrandPrimaryLight,
-    onPrimary = Color.White,
+    onPrimary = Color(0xFF1A1A1A),
     primaryContainer = BrandPrimaryDark,
     onPrimaryContainer = BrandPrimaryContainer,
     secondary = AccentTealLight,
