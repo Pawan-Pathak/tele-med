@@ -210,6 +210,41 @@ class TeleMedMemoryStore {
         patients.filter { it.registeredAt.startsWith(now.toLocalDate().toString()) }.forEach { p ->
             patientQueue.add(PatientQueueItem(p, p.registeredAt, p.status))
         }
+
+        // Pre-seed a prescription for demo (as if doctor already consulted Ramesh Kumar)
+        seedDemoPrescription()
+    }
+
+    private fun seedDemoPrescription() {
+        val patient = patients.first() // Ramesh Kumar
+        val doctor = doctors.first()   // Dr. Priya Sharma
+        generatedPrescription = Prescription(
+            id = "RX-2026-0001",
+            patientId = patient.id,
+            patientName = patient.fullName,
+            patientAge = patient.age,
+            patientGender = patient.gender.name,
+            doctorName = doctor.name,
+            doctorQualification = doctor.qualification,
+            clinicName = doctor.clinicName,
+            regNumber = doctor.regNumber,
+            date = LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd-MM-yyyy")),
+            chiefComplaints = patient.medicalHistory.primaryComplaint,
+            diagnosis = "Acute upper respiratory infection with underlying uncontrolled hypertension",
+            medicines = listOf(
+                Medicine("Paracetamol", "650mg", MedicineFrequency(morning = true, afternoon = true, night = true), 5, "Take after food"),
+                Medicine("Amoxicillin", "500mg", MedicineFrequency(morning = true, afternoon = false, night = true), 7, "Take with water"),
+                Medicine("Cetirizine", "10mg", MedicineFrequency(morning = false, afternoon = false, night = true), 5, "Take at bedtime"),
+                Medicine("Amlodipine", "5mg", MedicineFrequency(morning = true, afternoon = false, night = false), 30, "Continue daily for BP"),
+                Medicine("Omeprazole", "20mg", MedicineFrequency(morning = true, afternoon = false, night = false), 7, "Take on empty stomach")
+            ),
+            labTests = listOf("CBC (Complete Blood Count)", "X-Ray Chest", "Blood Sugar (Fasting/PP)"),
+            referral = null,
+            recommendations = "Rest for 3-5 days. Drink plenty of warm fluids. Monitor BP daily. Follow up after 7 days.",
+            allergies = "Sulfonamides",
+            procedures = "",
+            imagingNotes = "PA view chest X-ray advised to rule out lower respiratory tract infection"
+        )
     }
 
     // Mock drug list (30 common medicines)

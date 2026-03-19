@@ -282,6 +282,12 @@ fun AppNavHost(
                 onConsentNo = {
                     navController.popBackStack()
                 },
+                onViewPrescription = {
+                    navController.navigate(AppDestination.PharmacistPrescriptionView.route)
+                },
+                onDispenseMedicines = {
+                    navController.navigate(AppDestination.PharmacistDispense.route)
+                },
                 onBack = { navController.popBackStack() }
             )
         }
